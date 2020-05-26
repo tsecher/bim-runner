@@ -13,6 +13,11 @@ class ActionsManager {
     private $discovery;
 
     /**
+     * @var \BimRunner\Actions\Base\ActionInterface[]
+     */
+    protected $availableActions;
+
+    /**
      * ActionsManager constructor.
      *
      * @param string $baseNamespace
@@ -29,12 +34,16 @@ class ActionsManager {
     }
 
     /**
-     * Returns a list of available workers.
-     *
-     * @return array
+     * Retourne la liste des actions disponibles.
      */
     public function getActions() {
-        return $this->discovery->getActions();
+        if( is_null($this->availableActions) ){
+            $this->availableActions = [];
+            foreach ($this->discovery->getActions() as $id => $actionData){
+                $this->createAction($id);
+            }            
+        }
+        return $this->availableActions;
     }
 
     /**
@@ -52,30 +61,42 @@ class ActionsManager {
             return $actions[$name];
         }
 
-        throw new \Exception('Worker not found.');
+        throw new \Exception('Action not found.');
     }
 
     /**
-     * Creates a worker
+     * Crée une action depuis son identifiant (classname)
      *
-     * @param $name
+     * @param $id
      *
      * @return \BimRunner\Actions\Base\ActionInterface
      *
      * @throws \Exception
      */
-    public function createAction($name) {
-        $actions = $this->discovery->getActions();
-        if (array_key_exists($name, $actions)) {
-            $class = $actions[$name]['class'];
-            if (!class_exists($class)) {
-                throw new \Exception('Action class does not exist.');
+    public function createAction($id) {
+        if( !array_key_exists($id, $this->availableActions) ){
+            $actions = $this->discovery->getActions();
+            if (array_key_exists($id, $actions)) {
+                $class = $actions[$id]['class'];
+                /** @var \BimRunner\Actions\Manager\Annotation\Action $annotation */
+                $annotation = $actions[$id]['annotation'];
+                if (!class_exists($class)) {
+                    throw new \Exception('Action class does not exist.');
+                }
+
+
+                // Création de l'action
+                /** @var \BimRunner\Actions\Base\ActionInterface $action */
+                $this->availableActions[$id] = new $class();
+                $this->availableActions[$id]->setName($annotation->getName());
+                $this->availableActions[$id]->setWeight($annotation->getWeight());
             }
-
-            return new $class();
+            else{
+                throw new \Exception('Action does not exist.');
+            }
         }
+        return $this->availableActions[$id];
 
-        throw new \Exception('Action does not exist.');
     }
 
 }

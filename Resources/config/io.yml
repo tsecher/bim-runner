@@ -1,0 +1,19 @@
+section:
+  foreground: 'black'
+  background: 'green'
+  options:
+    - bold
+question:
+  foreground: 'cyan'
+  options:
+    - bold
+confirm:
+  foreground: 'green'
+info:
+  foreground: 'black'
+error:
+  foreground: 'red'
+command:
+  foreground: 'magenta'
+step:
+  foreground: 'green'

@@ -1,34 +1,38 @@
 <?php
 
-
 namespace BimRunner\Actions\Base;
 
+use BimRunner\Tools\IO\IOHelperInterface;
 use Symfony\Component\Console\Command\Command;
 
 interface ActionInterface {
 
-  public function getName(): string;
+    public function getName(): string;
 
-  public function getWeight(): int;
+    public function setName($name);
 
-  public function initQuestions();
+    public function getWeight(): int;
 
-  public function getProperties(): array;
+    public function setWeight($weight);
 
-  public function getTasksQueue();
+    public function initQuestions();
 
-  public function setDefaultProperties(array $properties = []);
+    public function getProperties(): array;
 
-  public function beforeExecute(array $properties, array &$state, array $tasks = []);
+    public function getTasksQueue();
 
-  public function execute(array $properties, array &$state, array $tasks = []);
+    public function setDefaultProperties(array $properties = []);
 
-  public function afterExecute(array $properties, array &$state, array $tasks = []);
+    public function beforeExecute(array $properties, array &$state, array $tasks = []);
 
-  public function initOptions(Command $command);
+    public function execute(array $properties, array &$state, array $tasks = []);
 
-  public function getId(): int;
+    public function afterExecute(array $properties, array &$state, array $tasks = []);
 
-  public function setId(int $id): void;
+    public function initOptions(Command $command);
+
+    public function getId(): int;
+
+    public function setId(int $id): void;
 
 }

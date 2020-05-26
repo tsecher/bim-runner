@@ -2,10 +2,11 @@
 
 namespace BimRunner\Actions\Manager;
 
+use BimRunner\Actions\Base\ActionInterface;
 use Doctrine\Common\Annotations\Reader;
-use Runner\Annotation\Action;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
+use BimRunner\Actions\Manager\Annotation\Action;
 
 class ActionsDiscovery {
     /**
@@ -66,7 +67,7 @@ class ActionsDiscovery {
      * Discovers actions
      */
     private function discoverActions() {
-        $path = $this->rootDir . 'src/' . $this->directory;
+        $path = $this->rootDir . '/src/' . $this->directory;
         $finder = new Finder();
         $finder->files()->in($path);
 
@@ -75,13 +76,19 @@ class ActionsDiscovery {
             if ($file->getExtension() === 'php') {
                 $class = $this->getNamespaceFromPath($file->getPath()) . '\\' . $file->getBasename('.php');
 
+                // Check l'interface
+                if( !in_array(ActionInterface::class, class_implements($class) ) ){
+                    continue;
+                }
+
+                // Check annotation.
                 $annotation = $this->annotationReader->getClassAnnotation(new \ReflectionClass($class), Action::class);
                 if (!$annotation) {
                     continue;
                 }
 
                 /** @var \Runner\Annotation\Action $annotation */
-                $this->actions[$annotation->getName()] = [
+                $this->actions[$class] = [
                   'class'      => $class,
                   'annotation' => $annotation,
                 ];
@@ -98,7 +105,7 @@ class ActionsDiscovery {
      */
     protected function getNamespaceFromPath(string $path): string {
         $replace = [
-          $this->rootDir . 'src/' => '',
+          $this->rootDir . '/src/' => '',
           '/'                     => '\\',
         ];
 
