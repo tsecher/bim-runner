@@ -1,0 +1,35 @@
+{
+    "name": "tsecher/bim-runner",
+    "description": "Outil Symfony pour lancer une liste d'actions à la chaine.",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "authors": [
+        {
+            "name": "Thomas Sécher",
+            "email": "me@thomas-secher.fr"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "BimRunner\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "BimRunner\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": ">=7.3",
+        "symfony/console": "~3",
+        "symfony/yaml": "~3",
+        "symfony/string": "^5.0",
+        "doctrine/annotations": "^1.10",
+        "symfony/finder": "^5.0",
+        "symfony/dependency-injection": "~3",
+        "symfony/framework-bundle": "~3"
+    },
+    "require-dev": {
+        "symfony/var-dumper": "~3"
+    }
+}
