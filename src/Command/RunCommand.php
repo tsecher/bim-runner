@@ -2,15 +2,12 @@
 
 namespace BimRunner\Command;
 
-use BimRunner\Actions\Manager\ActionsManager;
 use BimRunner\Command\Tools\ActionsProcessor;
 use BimRunner\Command\Tools\PropertiesStorage;
 use BimRunner\Command\Traits\ActionRetrieverTrait;
-use BimRunner\Tools\IO\FileHelper;
 use BimRunner\Tools\IO\FileHelperInterface;
 use BimRunner\Tools\IO\IOHelper;
 use BimRunner\Tools\IO\IOHelperInterface;
-use BimRunner\Tools\IO\PropertiesHelper;
 use BimRunner\Tools\IO\PropertiesHelperInterface;
 use BimRunner\Tools\Traits\StringTrait;
 use BimRunner\Actions\Base\ActionInterface;
@@ -72,7 +69,7 @@ class RunCommand extends Command {
      * @var PropertiesHelperInterface
      */
     protected $propertiesHelper;
-    
+
     /**
      * Liste des actions d'annulation et de continue.
      *
@@ -121,7 +118,7 @@ class RunCommand extends Command {
     protected function initAvailableActions(array $availableActions = []) {
         $this->availableActions = [];
         $id = count($this->stopActions);
-        foreach ($availableActions as $action) {
+        foreach (static::getSortedActions($availableActions) as $action) {
             $action->setId(++$id);
             $this->availableActions[$id] = $action;
         }
@@ -195,7 +192,7 @@ class RunCommand extends Command {
          * Si il n'y a pas de données sauvegarder dans runner.yml,
          * on ask l'utlisateur.
          */
-        $actionsToExecute = empty($savedData[PropertiesStorage::FIELD_ACTIONS]) ? $this->askActionsToExecute($io) : $this->getActionsByIds($savedData[PropertiesStorage::FIELD_ACTIONS]);
+        $actionsToExecute = $this->getActionsToExecute($io, $savedData);
 
         // On affiche le recap.
         $this->showActionsRecap($io, $actionsToExecute);
@@ -353,16 +350,46 @@ class RunCommand extends Command {
           ->getOption(static::OPTION_ONLY_STEPS)));
         $fromStep = $io->getInput()->getOption(static::OPTION_FROM_STEP);
 
-
         if (!empty($onlySteps)) {
             $processor->processSteps($onlySteps);
         }
-        elseif(isset($fromStep) && $fromStep !== FALSE ){
+        elseif (isset($fromStep) && $fromStep !== FALSE) {
             $processor->processFromStep($fromStep);
         }
-        else{
+        else {
             $processor->processAll();
         }
+    }
+
+    /**
+     * Retourne la liste des actions à executer.
+     *
+     * @param \BimRunner\Tools\IO\IOHelperInterface $io
+     * @param array $savedData
+     */
+    protected function getActionsToExecute(IOHelperInterface $io, array $savedData) {
+        $actionsToExecute = [];
+        // Si on a un step de défini.
+        $onlySteps = array_filter(explode(',', $io->getInput()
+          ->getOption(static::OPTION_ONLY_STEPS)));
+        if( !empty($onlySteps) ){
+            $actionsIds = array_map(function($step){
+                $stepData = explode('.', $step);
+                return reset($stepData);
+            }, $onlySteps);
+
+            $actionsToExecute = $this->getActionsByIds($actionsIds);
+        }
+        // Si il y a des actions dans le storage.
+        elseif (!empty($savedData[PropertiesStorage::FIELD_ACTIONS])){
+            $actionsToExecute = $this->getActionsByIds($savedData[PropertiesStorage::FIELD_ACTIONS]);
+        }
+        // Sinon on demande.
+        else{
+            $actionsToExecute = $this->askActionsToExecute($io);
+        }
+
+        return $actionsToExecute;
     }
 
 }

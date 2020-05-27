@@ -108,8 +108,8 @@ abstract class AbstractAction implements ActionInterface {
               ->ask($questionTitle, $default, $validators);
         }
         else{
-            IOHelper::me()->info($this->s('@id : @value', [
-              '@id' => $id,
+            IOHelper::me()->info($this->s('<question>@questionTitle</question> @value', [
+              '@questionTitle' => $questionTitle,
               '@value' => $this->properties[$id],
             ]));
         }
