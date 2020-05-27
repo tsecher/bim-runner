@@ -19,13 +19,6 @@ class IOHelper implements IOHelperInterface {
     use StringTrait;
 
     /**
-     * The command.
-     *
-     * @var \BimRunner\Command\RunCommand
-     */
-    private $command;
-
-    /**
      * Question Helper
      *
      * @var \Symfony\Component\Console\Helper\QuestionHelper
@@ -66,12 +59,12 @@ class IOHelper implements IOHelperInterface {
     /**
      * Create singleton.
      *
-     * @param \BimRunner\Command\RunCommand $command
+     * @param mixed $helper
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
-    public static function create(RunCommand $command, InputInterface $input, OutputInterface $output): IOHelperInterface {
-        static::$me = new static($command, $input, $output);
+    public static function create($helper, InputInterface $input, OutputInterface $output): IOHelperInterface {
+        static::$me = new static($helper, $input, $output);
 
         return static::$me;
     }
@@ -79,13 +72,12 @@ class IOHelper implements IOHelperInterface {
     /**
      * IOHelper constructor.
      *
-     * @param \BimRunner\Command\RunCommand $command
+     * @param mixed $helper
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
-    private function __construct(RunCommand $command, InputInterface $input, OutputInterface $output) {
-        $this->command = $command;
-        $this->helper = $this->command->getHelper('question');
+    private function __construct($helper, InputInterface $input, OutputInterface $output) {
+        $this->helper = $helper;
         $this->input = $input;
         $this->output = $output;
 
@@ -111,8 +103,7 @@ class IOHelper implements IOHelperInterface {
      */
     protected function loadStyles() {
         // Récupération de la config graphique de la console.
-        $configPath = $this->command->getFileHelper()
-            ->getAppDir() . 'Resources/config/io.yml';
+        $configPath = FileHelper::me()->getAppDir() . 'Resources/config/io.yml';
         if (!file_exists($configPath)) {
             $configPath = __DIR__ . '/../../../Resources/config/io.yml';
         }

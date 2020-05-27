@@ -76,6 +76,10 @@ class ActionsDiscovery {
             if ($file->getExtension() === 'php') {
                 $class = $this->getNamespaceFromPath($file->getPath()) . '\\' . $file->getBasename('.php');
 
+                if( !class_exists($class) ){
+                    continue;
+                }
+
                 // Check l'interface
                 if( !in_array(ActionInterface::class, class_implements($class) ) ){
                     continue;

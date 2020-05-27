@@ -3,12 +3,17 @@
 namespace BimRunner\Command;
 
 use BimRunner\Actions\Manager\ActionsManager;
+use BimRunner\Command\Tools\ActionsProcessor;
+use BimRunner\Command\Tools\PropertiesStorage;
+use BimRunner\Command\Traits\ActionRetrieverTrait;
 use BimRunner\Tools\IO\FileHelper;
 use BimRunner\Tools\IO\FileHelperInterface;
 use BimRunner\Tools\IO\IOHelper;
 use BimRunner\Tools\IO\IOHelperInterface;
+use BimRunner\Tools\IO\PropertiesHelper;
+use BimRunner\Tools\IO\PropertiesHelperInterface;
 use BimRunner\Tools\Traits\StringTrait;
-use Runner\Base\ActionInterface;
+use BimRunner\Actions\Base\ActionInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,7 +22,7 @@ use Symfony\Component\Yaml\Yaml;
 
 class RunCommand extends Command {
 
-    use StringTrait;
+    use StringTrait, ActionRetrieverTrait;
 
     /**
      * ID de l'action de prune.
@@ -55,13 +60,6 @@ class RunCommand extends Command {
     const OPTION_AUTO_CONFIRM = 'y';
 
     /**
-     * Previous properties file name.
-     *
-     * @const string
-     */
-    const FILE_RUNNER_DATA = 'runner.yml';
-
-    /**
      * File Helper
      *
      * @var FileHelperInterface
@@ -69,12 +67,12 @@ class RunCommand extends Command {
     protected $fileHelper;
 
     /**
-     * Actions disponibles
+     * Properties helerp
      *
-     * @var \BimRunner\Actions\Base\ActionInterface[]
+     * @var PropertiesHelperInterface
      */
-    protected $availableActions;
-
+    protected $propertiesHelper;
+    
     /**
      * Liste des actions d'annulation et de continue.
      *
@@ -99,10 +97,11 @@ class RunCommand extends Command {
     /**
      * {@inheritdoc}
      */
-    public function __construct($name = NULL, array $availableActions, FileHelperInterface $fileHelper) {
+    public function __construct($name = NULL, array $availableActions, FileHelperInterface $fileHelper, PropertiesHelperInterface $propertiesHelper) {
         parent::__construct($name);
 
         $this->fileHelper = $fileHelper;
+        $this->propertiesHelper = $propertiesHelper;
 
         // Initialisation des ids des available actions.
         $this->initAvailableActions($availableActions);
@@ -183,10 +182,12 @@ class RunCommand extends Command {
      */
     protected function execute(InputInterface $input, OutputInterface $output) {
         // Définition de l'io avec input et output, d'où le nom de IO
-        $io = IOHelper::create($this, $input, $output);
+        $io = IOHelper::create($this->getHelper('question'), $input, $output);
 
+        // Gestinonaire des propriétés sauvegardées.
+        $storage = new PropertiesStorage($io, $this->fileHelper);
         // Récupération des propriétés enregistrées si existantes.
-        $savedData = $this->getSavedData($io);
+        $savedData = $storage->getSavedData($io);
 
         /**
          * Récupération des actions à exécuter.
@@ -194,7 +195,7 @@ class RunCommand extends Command {
          * Si il n'y a pas de données sauvegarder dans runner.yml,
          * on ask l'utlisateur.
          */
-        $actionsToExecute = empty($savedData['actions']) ? $this->askActionsToExecute($io) : $this->getActionsByIds($savedData['actions']);
+        $actionsToExecute = empty($savedData[PropertiesStorage::FIELD_ACTIONS]) ? $this->askActionsToExecute($io) : $this->getActionsByIds($savedData[PropertiesStorage::FIELD_ACTIONS]);
 
         // On affiche le recap.
         $this->showActionsRecap($io, $actionsToExecute);
@@ -202,34 +203,14 @@ class RunCommand extends Command {
         // Si l'utilisateur confirm, on procèdes;
         if ($io->confirm('Valider les actions ?')) {
             // Récupération des propriétés.
-            $this->currentProperties = $this->getProperties($savedData['properties'], $actionsToExecute, $io);
+            $this->propertiesHelper->setParams($this->getParams($savedData[PropertiesStorage::FIELD_PARAMS], $actionsToExecute, $io));
 
             // On enregiste les données d'execution.
-            $this->saveData($this->currentProperties, $actionsToExecute);
+            $storage->saveData($this->propertiesHelper->getParams(), $actionsToExecute);
 
             // On execute les actions.
-            $this->executeActions($actionsToExecute, $this->currentProperties, $io);
+            $this->process($actionsToExecute, $io);
         }
-    }
-
-    /**
-     * Retourne les données du précédent run.
-     *
-     * @param \BimRunner\Tools\IO\IOHelperInterface $io
-     */
-    protected function getSavedData(IOHelperInterface $io) {
-        $savedData = ['actions' => [], 'properties' => []];
-        $filePath = $this->fileHelper->getExecutionDir() . '/' . static::FILE_RUNNER_DATA;
-        if (file_exists($filePath)) {
-            $io->info($this->s('Un fichier @file contenant les propriétés du dernier lancement a été trouvé.', [
-              '@file' => static::FILE_RUNNER_DATA
-            ]));
-            if ($io->confirm('Voulez-vous l\'utiliser ?')) {
-                $savedData = Yaml::parseFile($filePath);
-            }
-        }
-
-        return $savedData;
     }
 
     /**
@@ -286,40 +267,13 @@ class RunCommand extends Command {
     }
 
     /**
-     * Return the list of actions.
-     *
-     * @param $actions
-     */
-    protected function getActionsByIds(array $actions) {
-        return array_map(
-          [
-            $this,
-            'getActionById'
-          ],
-          $actions);
-    }
-
-    /**
-     * Retourne une action par son identifiant numéric.
-     *
-     * @param $id
-     */
-    public function getActionById($id) {
-        if (array_key_exists($id, $this->availableActions)) {
-            return $this->availableActions[$id];
-        }
-
-        return NULL;
-    }
-
-    /**
      * @param \BimRunner\Actions\Base\ActionInterface[]
      *
      * @return \BimRunner\Actions\Base\ActionInterface[]
      */
     public static function getSortedActions($actionsList): array {
         $list = $actionsList;
-        usort($list, function (ActionInterface $actionA, ActionInterface $actionB): int {
+        usort($list, function (\BimRunner\Actions\Base\ActionInterface $actionA, ActionInterface $actionB): int {
             $a = $actionA->getWeight();
             $b = $actionB->getWeight();
             if ($a > $b) {
@@ -357,61 +311,33 @@ class RunCommand extends Command {
     /**
      * Retourne la liste des propriétés utilisés pour la liste d'actions.
      *
-     * @param array $properties
+     * @param array $params
      * @param \BimRunner\Actions\Base\ActionInterface[] $actions
      * @param \BimRunner\Tools\IO\IOHelperInterface $io
      *
      * @return array|mixed
      */
-    protected function getProperties(array $properties, array $actions, IOHelperInterface $io) {
+    protected function getParams(array $params, array $actions, IOHelperInterface $io) {
         // On récupère les propriétés passées par option.
         $options = array_filter($io->getInput()->getOptions());
-        $properties = array_merge($properties, $options);
+        $params = array_merge($params, $options);
 
         // Initialise la liste de propriété en parcourant chanque action.
         foreach ($actions as $action) {
             $io->section($action->getName());
-            $action->setDefaultProperties($properties);
+            $action->setDefaultParams($params);
             $action->initQuestions();
-            $properties = array_merge($properties, $action->getProperties());
+            $params = array_merge($params, $action->getParams());
         }
 
         // Confirm.
         $confirm = $io->confirm('C\est OK pour vous? On peut lancer les actions ? Sinon on recommence.');
         if (!$confirm) {
-            $properties = $this->getProperties([], $actions, $io);
+            $params = $this->getParams([], $actions, $io);
         }
 
-        return $properties;
+        return $params;
     }
-
-    /**
-     * Enregistre les properties dans un fichier yaml à la récine d'execution.
-     *
-     * @param array $properties
-     * @param array $actions
-     */
-    protected function saveData(array $properties, array $actions): void {
-        $noSave = [
-          static::OPTION_ONLY_STEPS,
-          static::OPTION_FROM_STEP,
-          static::OPTION_AUTO_CONFIRM,
-          static::OPTION_ACTIONS,
-        ];
-
-        $data = [
-          'actions'    => array_map(function (\BimRunner\Actions\Base\ActionInterface $action) {
-              return $action->getId();
-          }, $actions),
-          'properties' => array_filter($properties, function ($value, $key) use ($noSave) {
-              return !in_array($key, $noSave);
-          }, ARRAY_FILTER_USE_BOTH),
-        ];
-        file_put_contents(
-          $this->fileHelper->getExecutionDir() . '/' . static::FILE_RUNNER_DATA,
-          Yaml::dump($data));
-    }
-
 
     /**
      * Execute all actions.
@@ -419,143 +345,24 @@ class RunCommand extends Command {
      * @param ActionInterface[] $actions
      * @param array $properties
      */
-    protected function executeActions(array $actions, array $properties, IOHelperInterface $io): void {
-        // Seul quelques étapes.
+    protected function process(array $actions, IOHelperInterface $io): void {
+        $processor = new ActionsProcessor($actions, $this->propertiesHelper, $io);
+
+        // Récupérations des options.
         $onlySteps = array_filter(explode(',', $io->getInput()
           ->getOption(static::OPTION_ONLY_STEPS)));
-        if (!empty($onlySteps)) {
-            $this->executeOnlySteps($onlySteps, $properties, $io);
-
-            return;
-        }
-
-        // from step.
         $fromStep = $io->getInput()->getOption(static::OPTION_FROM_STEP);
-        if (isset($fromStep) && $fromStep !== FALSE) {
-            $this->executeFromStep($actions, $properties, $fromStep, $io);
 
-            return;
+
+        if (!empty($onlySteps)) {
+            $processor->processSteps($onlySteps);
         }
-
-        // All steps.
-        $this->executeAllActions($actions, $properties, $io);
-    }
-
-    /**
-     * Execute la liste de action.
-     *
-     * @param array $actions
-     * @param array $properties
-     * @param \Runner\Tools\IO\IOHelper $io
-     */
-    protected function executeAllActions(array $actions, array $properties, IOHelperInterface $io) {
-        // Before.
-        foreach ($actions as $action) {
-            $action->beforeExecute($properties, $this->state);
+        elseif(isset($fromStep) && $fromStep !== FALSE ){
+            $processor->processFromStep($fromStep);
         }
-
-        $count = count($actions);
-        foreach ($actions as $key => $action) {
-            $io->section(
-              $this->s('[@key/@count] @actionName (Action: @id)', [
-                  '@key'        => $key + 1,
-                  '@count'      => $count,
-                  '@actionName' => $action->getName(),
-                  '@id'         => $action->getId(),
-                ]
-              ));
-            $action->execute($properties, $this->state);
+        else{
+            $processor->processAll();
         }
-
-        // After.
-        foreach ($actions as $action) {
-            $action->afterExecute($properties, $this->state);
-        }
-    }
-
-    /**
-     * Execute Seulement quelques steps.
-     *
-     * @param array $onlySteps
-     */
-    protected function executeOnlySteps(array $onlySteps, array $properties, IOHelperInterface $io) {
-        $actionsData = [];
-        foreach ($onlySteps as $stepId) {
-            list($actionId, $taskId) = explode('.', $stepId);
-            $taskId = $taskId ?: '1';
-            if (!array_key_exists($actionId, $actionsData)) {
-                if ($action = $this->getActionById($actionId)) {
-                    $actionsData[$actionId] = [
-                      'action' => $action,
-                      'tasks'  => [],
-                    ];
-                }
-                else {
-                    throw new \Exception('L\'action avec id ' . $actionId . ' n\'existe pas');
-                }
-            }
-
-            $actionsData[$actionId]['tasks'][] = $taskId;
-        }
-
-        foreach ($actionsData as $actionData) {
-            /** @var ActionInterface $action */
-            $action = $actionData['action'];
-            $action->beforeExecute($properties, $this->state);
-            $action->execute($properties, $this->state, $actionData['tasks']);
-            $action->afterExecute($properties, $this->state);
-        }
-    }
-
-    /**
-     * Execute une liste d'actions à partir d'un step donné.
-     *
-     * @param array $actions
-     * @param array $properties
-     * @param string $fromStep
-     * @param IOHelperInterface $io
-     */
-    protected function executeFromStep(array $actions, array $properties, $fromStep, IOHelperInterface $io) {
-        // Définitions de la tache de départ.
-        list($actionId, $taskId) = explode('.', $fromStep);
-        $taskId = $taskId ?: '1';
-
-        if ($startAction = $this->getActionById($actionId)) {
-            // Récupération de la liste de taches.
-            $tasks = $startAction->getTasksQueue();
-            $tasksToExecute = array_splice(array_keys($tasks), $taskId);
-            $startAction->execute($properties, $this->state, $tasksToExecute);
-
-            // Récupération des actions qui suivent l'action de départ.
-            $nextActions = array_filter($actions, function (ActionInterface $action) use ($actionId) {
-                return $action->getId() > ($actionId - count($this->stopActions)) + 2;
-            }, ARRAY_FILTER_USE_BOTH);
-            foreach ($nextActions as $action) {
-                $action->execute($properties, $this->state);
-            }
-
-        }
-        else {
-            throw new \Exception('L\'action avec id ' . $actionId . ' n\'existe pas');
-        }
-    }
-
-    /**
-     * Retourne les propriétés courrantes.
-     *
-     * @return array
-     */
-    public function getCurrentProperties(): array {
-        return $this->currentProperties;
-    }
-
-    /**
-     * Retourne le current state.
-     *
-     * @return mixed
-     */
-    public function getState() {
-        return $this->state;
     }
 
 }

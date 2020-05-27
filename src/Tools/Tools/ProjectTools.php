@@ -4,6 +4,10 @@ namespace BimRunner\Tools\Tools;
 
 use BimRunner\Actions\Base\ActionInterface;
 use BimRunner\Command\RunCommand;
+use BimRunner\Tools\IO\FileHelper;
+use BimRunner\Tools\IO\PropertiesHelper;
+use BimRunner\Tools\Traits\OSTrait;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
 
 class ProjectTools {
@@ -24,13 +28,6 @@ class ProjectTools {
     protected static $me;
 
     /**
-     * Runner command.
-     *
-     * @var \BimRunner\Command\RunCommand
-     */
-    private $runnerCommand;
-
-    /**
      * Project dir.
      *
      * @var string|bool
@@ -45,20 +42,8 @@ class ProjectTools {
      */
     public static function me() {
         if (!isset(static::$me)) {
-            throw new \Exception('Singleton non créé. Utilisez static::create');
+            static::$me = new static();
         }
-
-        return static::$me;
-    }
-
-    /**
-     * Create singleton.
-     *
-     * @param string $appDir
-     * @param string $executionDir
-     */
-    public static function create(RunCommand $runnerCommand) {
-        static::$me = new static($runnerCommand);
 
         return static::$me;
     }
@@ -69,8 +54,7 @@ class ProjectTools {
      * @param string $appDir
      * @param string $executionDir
      */
-    protected function __construct(RunnerCommand $runnerCommand) {
-        $this->runnerCommand = $runnerCommand;
+    protected function __construct() {
     }
 
     /**
@@ -78,9 +62,11 @@ class ProjectTools {
      */
     public function getProjectDir() {
         if ($this->projectDir === FALSE) {
-            if (array_key_exists(static::PROP_PROJECT_NAME, $this->runnerCommand->getCurrentProperties())) {
+            $project = PropertiesHelper::me()
+              ->getParam(static::PROP_PROJECT_NAME);
+            if ($project) {
                 $this->projectDir = FileHelper::me()
-                    ->getExecutionDir() . $this->runnerCommand->getCurrentProperties()[static::PROP_PROJECT_NAME];
+                    ->getExecutionDir() . $project;
             }
             else {
                 $this->projectDir = NULL;
@@ -102,8 +88,8 @@ class ProjectTools {
     /**
      * Ajoute l'option sur le nom du projet.
      */
-    public function addProjectOption() {
-        $this->runnerCommand->addOption(static::PROP_PROJECT_NAME, NULL, InputOption::VALUE_REQUIRED, 'Quel est le nom du projet ?',);
+    public function addProjectOption(Command $command) {
+        $command->addOption(static::PROP_PROJECT_NAME, NULL, InputOption::VALUE_REQUIRED, 'Quel est le nom du projet ?',);
     }
 
     /**

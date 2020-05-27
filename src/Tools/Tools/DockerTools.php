@@ -2,6 +2,8 @@
 
 namespace BimRunner\Tools\Tools;
 
+use BimRunner\Tools\IO\PropertiesHelperInterface;
+use BimRunner\Tools\Traits\OSTrait;
 use Symfony\Component\Console\Input\InputOption;
 
 class DockerTools {
@@ -22,35 +24,20 @@ class DockerTools {
      */
     public static function me() {
         if (!isset(static::$me)) {
-            throw new \Exception('Singleton non créé. Utilisez static::create');
+            static::$me = new static();
         }
 
         return static::$me;
     }
 
     /**
-     * Create singleton.
-     */
-    public static function create() {
-        static::$me = new static();
-
-        return static::$me;
-    }
-
-    /**
-     * DockerTools constructor.
-     */
-    protected function __construct() {
-    }
-
-    /**
      * Met en route le docker.
      */
-    public function dockerUp(&$state) {
-        if (!isset($state['docker-up']) || $state['docker-up'] !== TRUE) {
+    public function dockerUp(PropertiesHelperInterface $propertiesHelper) {
+        if ($propertiesHelper->getState('docker-up') !== TRUE) {
             $this->command('make stop', ProjectTools::me()->getProjectDir());
             $this->command('make up', ProjectTools::me()->getProjectDir());
-            $state['docker-up'] = TRUE;
+            $propertiesHelper->setState('docker-up', TRUE);
         }
     }
 

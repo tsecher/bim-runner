@@ -3,6 +3,9 @@
 namespace BimRunner\Tools\Traits;
 
 
+use BimRunner\Tools\IO\FileHelper;
+use BimRunner\Tools\IO\IOHelper;
+
 trait GitTrait {
     use OSTrait;
 

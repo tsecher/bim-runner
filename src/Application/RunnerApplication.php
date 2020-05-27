@@ -4,6 +4,7 @@ namespace BimRunner\Application;
 
 use BimRunner\Actions\Manager\ActionsManager;
 use BimRunner\Tools\IO\FileHelper;
+use BimRunner\Tools\IO\PropertiesHelper;
 use Symfony\Component\Console\Application;
 use BimRunner\Command\RunCommand;
 
@@ -43,7 +44,12 @@ class RunnerApplication {
         $this->actionsManager = new ActionsManager($baseNamespace, $actionsDirectory, $appDir);
 
         // Creation de la commande.
-        $this->command = new RunCommand($this->name,  $this->actionsManager->getActions(), FileHelper::create($appDir, getcwd()));
+        $this->command = new RunCommand(
+          $this->name,
+          $this->actionsManager->getActions(),
+          FileHelper::create($appDir, getcwd()),
+          PropertiesHelper::me()
+        );
     }
 
     /**

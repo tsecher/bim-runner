@@ -61,8 +61,18 @@ class FileHelper implements FileHelperInterface {
      * @param string $executionDir
      */
     protected function __construct(string $appDir, string $executionDir) {
-        $this->appDir = $appDir;
-        $this->executionDir = $executionDir;
+        $this->appDir = $this->cleanPath($appDir);
+        $this->executionDir = $this->cleanPath($executionDir);
+    }
+
+    /**
+     * Ajoute le / 
+     * @param $path
+     *
+     * @return string
+     */
+    protected function cleanPath($path) {
+        return $path .= (substr($path, -1) !== '/') ? '/' : '';
     }
 
     /**

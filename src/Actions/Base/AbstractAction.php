@@ -3,6 +3,7 @@
 namespace BimRunner\Actions\Base;
 
 use BimRunner\Tools\IO\IOHelper;
+use BimRunner\Tools\IO\PropertiesHelperInterface;
 use BimRunner\Tools\Traits\StringTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Yaml\Yaml;
@@ -87,14 +88,14 @@ abstract class AbstractAction implements ActionInterface {
     /**
      * {@inheritdoc}
      */
-    public function getProperties(): array {
+    public function getParams(): array {
         return $this->properties;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function setDefaultProperties(array $properties = []) {
+    public function setDefaultParams(array $properties = []) {
         $this->properties = array_merge($this->properties, $properties);
     }
 
@@ -151,19 +152,19 @@ abstract class AbstractAction implements ActionInterface {
     /**
      * {@inheritdoc}
      */
-    public function beforeExecute(array $properties, array &$state, array $tasks = []) {
+    public function beforeExecute(PropertiesHelperInterface $propertiesHelper, array $tasks = []) {
     }
 
     /**
      * {@inheritdoc}
      */
-    public function afterExecute(array $properties, array &$state, array $tasks = []) {
+    public function afterExecute(PropertiesHelperInterface $propertiesHelper, array $tasks = []) {
     }
 
     /**
      * {@inheritdoc}
      */
-    public function execute(array $properties, array &$state, array $tasks = []) {
+    public function execute(PropertiesHelperInterface $propertiesHelper, array $tasks = []) {
         $callbacksList = $this->getTasksQueue();
         $count = count($this->getTasksQueue());
 
@@ -188,7 +189,7 @@ abstract class AbstractAction implements ActionInterface {
 
             // Gestion d'erreur.
             try {
-                call_user_func_array($callback, [&$state]);
+                call_user_func_array($callback, [$propertiesHelper]);
             }
             catch (\Exception $e) {
                 IOHelper::me()->error($e->getMessage());

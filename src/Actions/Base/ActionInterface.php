@@ -3,6 +3,8 @@
 namespace BimRunner\Actions\Base;
 
 use BimRunner\Tools\IO\IOHelperInterface;
+use BimRunner\Tools\IO\PropertiesHelper;
+use BimRunner\Tools\IO\PropertiesHelperInterface;
 use Symfony\Component\Console\Command\Command;
 
 interface ActionInterface {
@@ -17,17 +19,17 @@ interface ActionInterface {
 
     public function initQuestions();
 
-    public function getProperties(): array;
+    public function getParams(): array;
 
     public function getTasksQueue();
 
-    public function setDefaultProperties(array $properties = []);
+    public function setDefaultParams(array $properties = []);
 
-    public function beforeExecute(array $properties, array &$state, array $tasks = []);
+    public function beforeExecute(PropertiesHelperInterface $propertiesHelper, array $tasks = []);
 
-    public function execute(array $properties, array &$state, array $tasks = []);
+    public function execute(PropertiesHelperInterface $propertiesHelper, array $tasks = []);
 
-    public function afterExecute(array $properties, array &$state, array $tasks = []);
+    public function afterExecute(PropertiesHelperInterface $propertiesHelper, array $tasks = []);
 
     public function initOptions(Command $command);
 
