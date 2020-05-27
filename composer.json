@@ -9,6 +9,9 @@
             "email": "me@thomas-secher.fr"
         }
     ],
+    "bin":[
+        "generate-runner"
+    ],
     "autoload": {
         "psr-4": {
             "BimRunner\\": "src"

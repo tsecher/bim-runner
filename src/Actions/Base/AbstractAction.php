@@ -107,11 +107,12 @@ abstract class AbstractAction implements ActionInterface {
             $this->properties[$id] = IOHelper::me()
               ->ask($questionTitle, $default, $validators);
         }
-        else{
-            IOHelper::me()->info($this->s('<question>@questionTitle</question> @value', [
-              '@questionTitle' => $questionTitle,
-              '@value' => $this->properties[$id],
-            ]));
+        else {
+            IOHelper::me()
+              ->info($this->s('<question>@questionTitle</question> @value', [
+                '@questionTitle' => $questionTitle,
+                '@value'         => $this->properties[$id],
+              ]));
         }
 
         return $this->properties[$id];
@@ -210,10 +211,11 @@ abstract class AbstractAction implements ActionInterface {
     protected function getDescription($class, $method) {
         $reflectionClass = new \ReflectionMethod($class, $method);
         $property = $reflectionClass->getDocComment();
-        $desc = explode(PHP_EOL, $property)[1];
-        $desc = explode('* ', $desc)[1];
+        $desc = explode(PHP_EOL, $property);
+        $desc = isset($desc[1]) ? $desc[1] : '';
+        $desc = explode('* ', $desc);
 
-        return $desc;
+        return isset($desc[1]) ? $desc[1] : NULL;
     }
 
     /**

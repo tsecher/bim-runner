@@ -3,7 +3,7 @@
 namespace BimRunner\Tools\Traits;
 
 trait ReplaceTrait {
-    use OSTrait;
+    use OSTrait, StringTrait;
 
     protected $str_content_id = '_@_';
 
@@ -19,6 +19,11 @@ trait ReplaceTrait {
         if (file_exists($from)) {
             $data = file_get_contents($from);
             $data = $this->replace($replace, $data, $idWrappers);
+
+            $pathInfo = pathinfo($to);
+            if( !is_dir($pathInfo['dirname']) ){
+                $this->command('mkdir ' . $pathInfo['dirname'] . ' -p');
+            }
             file_put_contents($to, $data);
         }
     }
@@ -33,19 +38,7 @@ trait ReplaceTrait {
      * @return string
      */
     public function replace($data, $subject, $idWrappers = []) {
-        $dataToReplace = $data;
-
-        if (!empty($idWrappers)) {
-            foreach ($idWrappers as $idWrapper) {
-                foreach ($data as $key => $value) {
-                    $dataToReplace[str_replace($this->str_content_id, $key, $idWrapper)] = $value;
-//          unlink($dataToReplace[$key]);
-                }
-            }
-            $dataToReplace = array_reverse($dataToReplace);
-        }
-
-        return str_replace(array_keys($dataToReplace), array_values($dataToReplace), $subject);
+        return $this->s($subject, $data, $idWrappers);
     }
 
     /**
