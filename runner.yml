@@ -1,0 +1,7 @@
+actions:
+    - 3
+params:
+    action_name: 'Générer un runner'
+    action_class_name: GenerateRunner
+    action_weight: '10'
+    action_namespace: BimRunner\Generator\Actions
