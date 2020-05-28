@@ -77,7 +77,7 @@ class GenerateActionAction extends AbstractAction {
         $this->initWorkDir();
         $this->ask(static::PROP_ACTION_NAME, 'Quel est le nom de l\'action ? ');
         $this->ask(static::PROP_CLASS_NAME, 'Quel est le nom de la class de l\'action ? ');
-        $this->ask(static::PROP_ACTION_WEIGHT, 'Quel est le poids de l\'action ? ', '0');
+        $this->ask(static::PROP_ACTION_WEIGHT, 'Quel est le poids de l\'action ? ', '1');
         $this->ask(static::PROP_NAMESPACE, 'Quel est le namespace de l\'action ?');
     }
 
