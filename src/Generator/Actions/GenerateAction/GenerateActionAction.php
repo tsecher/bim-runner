@@ -12,7 +12,7 @@ use BimRunner\Actions\Manager\Annotation\Action;
 use Symfony\Component\Finder\Finder;
 
 /**
- * @Action(
+ * //@Action(
  *     name = "Générer une action",
  *     weight = 0
  * )

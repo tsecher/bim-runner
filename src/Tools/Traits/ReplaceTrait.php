@@ -2,6 +2,8 @@
 
 namespace BimRunner\Tools\Traits;
 
+use Symfony\Component\Finder\Finder;
+
 trait ReplaceTrait {
     use OSTrait, StringTrait;
 
@@ -94,6 +96,37 @@ trait ReplaceTrait {
         }
         else {
             $this->command('cp ' . $from . ' ' . $to, $dirname);
+        }
+    }
+
+    /**
+     * Copy les fichier présent dans le dir from dans le dir to.
+     *
+     * @param $from
+     * @param $to
+     * @param $replaceData
+     * @param $idWrappers
+     */
+    public function copyDirTemplate($from, $to, $replaceData, $idWrappers){
+        $replaceData[$from] = $to;
+
+        $finder = new Finder();
+        foreach ($finder->files()->in($from) as $file) {
+            // Création de la destination.
+            $source = $file->getPath() . '/' . $file->getFilename();
+            $destination = $this->s(
+              $source,
+              $replaceData,
+              $idWrappers
+            );
+
+            // Création du fichier.
+            $this->copyAndReplace(
+              $file->getPath() . '/' . $file->getFilename(),
+              $destination,
+              $replaceData,
+              $idWrappers
+            );
         }
     }
 

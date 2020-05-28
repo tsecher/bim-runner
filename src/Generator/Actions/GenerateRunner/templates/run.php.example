@@ -1,0 +1,8 @@
+<?php
+
+include_once(__DIR__ . '/custom_autoload.php');
+
+use BimRunner\Application\RunnerApplication;
+
+$app = new RunnerApplication("{{runner_name}}", __DIR__, '{{runner_namespace}}', '{{runner_action_dir}}');
+$app->run();

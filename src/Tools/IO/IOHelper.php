@@ -316,7 +316,7 @@ class IOHelper implements IOHelperInterface {
     protected function validate($value, array $validateCallbacks) {
         foreach ($validateCallbacks as $callback) {
             // Object method.
-            if (method_exists($this, $callback)) {
+            if (is_string($callback) && method_exists($this, $callback)) {
                 $this->$callback($value);
             }
             else {
