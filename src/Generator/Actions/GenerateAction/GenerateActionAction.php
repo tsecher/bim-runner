@@ -14,7 +14,7 @@ use Symfony\Component\Finder\Finder;
 /**
  * //@Action(
  *     name = "Générer une action",
- *     weight = 0
+ *     weight = 10
  * )
  */
 class GenerateActionAction extends AbstractAction {

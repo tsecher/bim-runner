@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\File\File;
 /**
  * @Action(
  *     name = "Générer un runner",
- *     weight = 10
+ *     weight = 0
  * )
  */
 class GenerateRunnerAction extends AbstractAction {
@@ -139,6 +139,8 @@ class GenerateRunnerAction extends AbstractAction {
 
         $this->composer('config repositories.bim-runner vcs https://github.com/tsecher/bim-runner', $this->workDir);
         $this->composer('require tsecher/bim-runner ', $this->workDir);
+
+        $this->initComposerContextData();
     }
 
     /**
