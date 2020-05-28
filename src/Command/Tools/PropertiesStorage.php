@@ -5,6 +5,7 @@ namespace BimRunner\Command\Tools;
 use BimRunner\Command\RunCommand;
 use BimRunner\Tools\IO\IOHelperInterface;
 use BimRunner\Tools\Traits\StringTrait;
+use MongoDB\Driver\Command;
 use Symfony\Component\Yaml\Yaml;
 
 class PropertiesStorage {
@@ -46,6 +47,12 @@ class PropertiesStorage {
     protected $fileHelper;
 
     /**
+     * The file name.
+     * @var string
+     */
+    protected $fileName;
+
+    /**
      * PropertiesStorage constructor.
      *
      * @param \BimRunner\Tools\IO\IOHelperInterface $io
@@ -54,6 +61,9 @@ class PropertiesStorage {
     public function __construct(\BimRunner\Tools\IO\IOHelperInterface $io, \BimRunner\Tools\IO\FileHelperInterface $fileHelper) {
         $this->io = $io;
         $this->fileHelper = $fileHelper;
+
+        $fileData= explode('/',reset($_SERVER ['argv']));
+        $this->fileName = end($fileData) . '.props.yml';
     }
 
     /**
@@ -66,7 +76,7 @@ class PropertiesStorage {
           static::FIELD_ACTIONS=> [],
           static::FIELD_PARAMS => [],
           ];
-        $filePath = $this->fileHelper->getExecutionDir() . '/' . static::FILE_RUNNER_DATA;
+        $filePath = $this->fileHelper->getExecutionDir() . '/' . $this->fileName;
         if (file_exists($filePath)) {
             $this->io->info($this->s('Un fichier @file contenant les propriétés du dernier lancement a été trouvé.', [
               '@file' => static::FILE_RUNNER_DATA
@@ -103,7 +113,7 @@ class PropertiesStorage {
           }, ARRAY_FILTER_USE_BOTH),
         ];
         file_put_contents(
-          $this->fileHelper->getExecutionDir() . '/' . static::FILE_RUNNER_DATA,
+          $this->fileHelper->getExecutionDir() . '/' . $this->fileName,
           Yaml::dump($data));
     }
 }

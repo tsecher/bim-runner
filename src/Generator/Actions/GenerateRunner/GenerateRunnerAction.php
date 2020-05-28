@@ -102,9 +102,9 @@ class GenerateRunnerAction extends AbstractAction {
         // Ask sur le répertoire de travail
         $this->askWorkingDir();
         $this->ask(static::PROP_RUNNER_NAME, 'Quel est le nom humain de votre runner ?');
-        $this->ask(static::PROP_RUNNER_ID, 'QUel est l\'id de votre runner (la commande) ?', NULL, ['isSnake']);
+        $this->ask(static::PROP_RUNNER_ID, 'QUel est l\'id de votre runner (la commande) ?', NULL, ['notEmpty', 'isSnake']);
         $this->ask(static::PROP_RUNNER_NAMESPACE, 'Quel est le namespace de base de l\'app ?');
-        $this->ask(static::PROP_RUNNER_ACTION_DIR, 'Quel est le répertiore où seront placées les Actions (par rapport à src) ?');
+        $this->ask(static::PROP_RUNNER_ACTION_DIR, 'Quel est le répertiore où seront placées les Actions (par rapport à src) ?', 'Actions');
 
         // On génère automatiquement le namespace de l'action si on en crée une ensuite.
         $this->properties[GenerateActionAction::PROP_NAMESPACE] =

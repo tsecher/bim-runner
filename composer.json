@@ -10,7 +10,7 @@
         }
     ],
     "bin":[
-        "generate-runner"
+        "bim-runner"
     ],
     "autoload": {
         "psr-4": {
