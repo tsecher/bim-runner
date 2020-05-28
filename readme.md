@@ -161,3 +161,9 @@ identifiant [id de l'action].[id de la tache] et séparés par des virgules : `-
 
 ### Démarrer depuis un step : --from-step
 Vous pouvez choisir de débuter un run à partir d'un step précis via l'option `--from-step`
+
+
+## Sauvegarde des propriétés
+Les params des propriétés peuvent être sauvegarder dans un fichier `.props.yml` dans le répertoire d'execution.
+Si le runner détecte un fichier de ce type il vous propose de préremplir les propriétés avec ce fichier.
+Du coup vous pouvez aussi partager ce fichier si vous voulez utiliser cette liste de propriété dans un autre contexte.
