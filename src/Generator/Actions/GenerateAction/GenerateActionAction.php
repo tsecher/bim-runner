@@ -12,9 +12,9 @@ use BimRunner\Actions\Manager\Annotation\Action;
 use Symfony\Component\Finder\Finder;
 
 /**
- * //@Action(
+ * @Action(
  *     name = "Générer une action",
- *     weight = 10
+ *     weight = 0
  * )
  */
 class GenerateActionAction extends AbstractAction {
@@ -72,8 +72,6 @@ class GenerateActionAction extends AbstractAction {
         $this->ask(static::PROP_NAMESPACE, 'Quel est le namespace de l\'action ?');
     }
 
-
-
     /**
      * {@inheritdoc}
      */
@@ -83,38 +81,21 @@ class GenerateActionAction extends AbstractAction {
         ];
     }
 
+    /**
+     * Crée les fichiers de l'action.
+     *
+     * @param \BimRunner\Tools\IO\PropertiesHelperInterface $propertiesHelper
+     */
     protected function createAction(PropertiesHelperInterface $propertiesHelper) {
         $data = $propertiesHelper->getParams();
         // Clean class name
         $data[static::PROP_CLASS_NAME] = $this->getCleanClassName($this->properties[static::PROP_CLASS_NAME]);
         $data[static::PROP_NAMESPACE] = $this->getCleanNamespace($data[static::PROP_CLASS_NAME], $this->properties[static::PROP_NAMESPACE]);
 
-        // Récupération du réperiore de travail.
-        $sourceDir = __DIR__ . '/templates';
+        $idWrapper = ['{{' . $this->str_content_id . '}}'];
         $dir = $this->getSourceDir();
         $workspace = $this->getWorkspace($data[static::PROP_NAMESPACE], $dir);
-        $data[$sourceDir] = $workspace;
-
-        $idWrapper = ['{{' . $this->str_content_id . '}}'];
-
-        $finder = new Finder();
-        foreach ($finder->files()->in($sourceDir) as $file) {
-            // Création de la destination.
-            $source = $file->getPath() . '/' . $file->getFilename();
-            $destination = $this->s(
-              $source,
-              $data,
-              $idWrapper
-            );
-
-            // Création du fichier.
-            $this->copyAndReplace(
-              $file->getPath() . '/' . $file->getFilename(),
-              $destination,
-              $data,
-              $idWrapper
-            );
-        }
+        $this->copyDirTemplate(__DIR__.'/templates', $workspace , $data, $idWrapper);
     }
 
     /**
@@ -144,7 +125,7 @@ class GenerateActionAction extends AbstractAction {
         if (!is_dir($workspace)) {
             $this->command('mkdir ' . $workspace . ' -p');
         }
-        
+
         return $workspace;
     }
 
@@ -152,13 +133,7 @@ class GenerateActionAction extends AbstractAction {
      * Clean le class name.
      */
     protected function getCleanClassName($className) {
-        // Si l'utilisateur a saisi Action en suffix, on le vire.
-        $sub = substr($className, -(strlen(static::CLASS_SUFFIX)));
-        if ($sub !== static::CLASS_SUFFIX) {
-            $className .= static::CLASS_SUFFIX;
-        }
-
-        return $className;
+        return $className.static::CLASS_SUFFIX;
     }
 
     /**
@@ -166,12 +141,12 @@ class GenerateActionAction extends AbstractAction {
      */
     protected function getCleanNamespace($className, $namespace) {
         // Si l'utilisateur a saisi le rep de l'action dans le namespace on le vire.
-        $sub = substr($namespace,-(strlen($className)));
+        $sub = substr($namespace, -(strlen($className)));
         if ($sub === static::CLASS_SUFFIX) {
             $namespace = substr($namespace, 0, -(strlen($className)));
         }
 
-        return $namespace . '\\'. substr($className, 0, -(strlen(static::CLASS_SUFFIX)));
+        return $namespace . '\\' . substr($className, 0, -(strlen(static::CLASS_SUFFIX)));
     }
 
 }
