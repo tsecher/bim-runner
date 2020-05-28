@@ -282,7 +282,7 @@ class IOHelper implements IOHelperInterface {
      * @throws \Exception
      */
     public function notEmpty($value) {
-        if (empty($value)) {
+        if (empty($value) || (is_string($value && strlen($value)===0))) {
             throw new \Exception('Valeur incorrecte (ne doit pas être vide)');
         }
 

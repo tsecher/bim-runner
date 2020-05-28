@@ -102,7 +102,7 @@ abstract class AbstractAction implements ActionInterface {
     /**
      * {@inheritdoc}
      */
-    public function ask($id, string $questionTitle, $default = NULL, $validators = []) {
+    public function ask($id, string $questionTitle, $default = NULL, $validators = ['notEmpty']) {
         if (!array_key_exists($id, $this->properties) || is_null($this->properties[$id])) {
             $this->properties[$id] = IOHelper::me()
               ->ask($questionTitle, $default, $validators);

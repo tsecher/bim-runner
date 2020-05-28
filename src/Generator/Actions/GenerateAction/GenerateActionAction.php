@@ -3,6 +3,7 @@
 namespace BimRunner\Generator\Actions\GenerateAction;
 
 use BimRunner\Actions\Base\AbstractAction;
+use BimRunner\Generator\Actions\GenerateRunner\GenerateRunnerAction;
 use BimRunner\Tools\IO\FileHelper;
 use BimRunner\Tools\IO\PropertiesHelperInterface;
 use BimRunner\Tools\Traits\ReplaceTrait;
@@ -55,6 +56,13 @@ class GenerateActionAction extends AbstractAction {
      */
     const CLASS_SUFFIX = 'Action';
 
+    /**
+     * Repertoire de travail.
+     *
+     * @var string
+     */
+    protected $workDir;
+
     public function initOptions(Command $command) {
         $command->addOption(static::PROP_ACTION_NAME, NULL, InputOption::VALUE_REQUIRED);
         $command->addOption(static::PROP_CLASS_NAME, NULL, InputOption::VALUE_REQUIRED);
@@ -66,9 +74,10 @@ class GenerateActionAction extends AbstractAction {
      * {@inheritdoc}
      */
     public function initQuestions() {
+        $this->initWorkDir();
         $this->ask(static::PROP_ACTION_NAME, 'Quel est le nom de l\'action ? ');
         $this->ask(static::PROP_CLASS_NAME, 'Quel est le nom de la class de l\'action ? ');
-        $this->ask(static::PROP_ACTION_WEIGHT, 'Quel est le poids de l\'action ? ');
+        $this->ask(static::PROP_ACTION_WEIGHT, 'Quel est le poids de l\'action ? ', '0');
         $this->ask(static::PROP_NAMESPACE, 'Quel est le namespace de l\'action ?');
     }
 
@@ -77,7 +86,7 @@ class GenerateActionAction extends AbstractAction {
      */
     public function getTasksQueue() {
         return [
-          [$this, 'createAction']
+          [$this, 'createAction'],
         ];
     }
 
@@ -93,24 +102,27 @@ class GenerateActionAction extends AbstractAction {
         $data[static::PROP_NAMESPACE] = $this->getCleanNamespace($data[static::PROP_CLASS_NAME], $this->properties[static::PROP_NAMESPACE]);
 
         $idWrapper = ['{{' . $this->str_content_id . '}}'];
-        $dir = $this->getSourceDir();
-        $workspace = $this->getWorkspace($data[static::PROP_NAMESPACE], $dir);
-        $this->copyDirTemplate(__DIR__.'/templates', $workspace , $data, $idWrapper);
+        $workspace = $this->getWorkspace($data[static::PROP_NAMESPACE], $this->workDir . '/src/');
+        $this->copyDirTemplate(__DIR__ . '/templates', $workspace, $data, $idWrapper);
     }
 
     /**
-     * Retourne le répertoire de copie
+     * INitialise le rep de travail.
      */
-    protected function getSourceDir() {
-        $dir = FileHelper::me()->getExecutionDir();
-        if (strpos($dir, '/src/')) {
-            $dir = explode('/src/', $dir)[0] . '/src/';
+    protected function initWorkDir() {
+        $execDir = FileHelper::me()->getExecutionDir();
+        $composerComponent = $this->getComposerContext($execDir);
+        if ($composerComponent['dir']) {
+            $this->workDir = $composerComponent['dir'];
         }
-        elseif (is_dir($dir . '/src')) {
-            $dir .= 'src/';
+        elseif(isset($this->properties[GenerateRunnerAction::PROP_WORKING_DIR]) ) {
+            $this->workDir = FileHelper::me()->getExecutionDir()
+              .'/'. $this->properties[GenerateRunnerAction::PROP_WORKING_DIR];
+        }
+        else{
+            $this->workDir = FileHelper::me()->getExecutionDir();
         }
 
-        return $dir;
     }
 
     /**
@@ -133,7 +145,7 @@ class GenerateActionAction extends AbstractAction {
      * Clean le class name.
      */
     protected function getCleanClassName($className) {
-        return $className.static::CLASS_SUFFIX;
+        return $className . static::CLASS_SUFFIX;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace BimRunner\Generator\Actions\GenerateRunner;
 
 use BimRunner\Actions\Base\AbstractAction;
+use BimRunner\Generator\Actions\GenerateAction\GenerateActionAction;
 use BimRunner\Tools\IO\FileHelper;
 use BimRunner\Tools\IO\IOHelper;
 use BimRunner\Tools\IO\PropertiesHelperInterface;
@@ -100,10 +101,18 @@ class GenerateRunnerAction extends AbstractAction {
 
         // Ask sur le répertoire de travail
         $this->askWorkingDir();
-        $this->ask(static::PROP_RUNNER_NAME, 'QUel est le nom humain de votre runner ?');
+        $this->ask(static::PROP_RUNNER_NAME, 'Quel est le nom humain de votre runner ?');
         $this->ask(static::PROP_RUNNER_ID, 'QUel est l\'id de votre runner (la commande) ?', NULL, ['isSnake']);
         $this->ask(static::PROP_RUNNER_NAMESPACE, 'Quel est le namespace de base de l\'app ?');
         $this->ask(static::PROP_RUNNER_ACTION_DIR, 'Quel est le répertiore où seront placées les Actions (par rapport à src) ?');
+
+        // On génère automatiquement le namespace de l'action si on en crée une ensuite.
+        $this->properties[GenerateActionAction::PROP_NAMESPACE] =
+          $this->properties[static::PROP_RUNNER_NAMESPACE] . '\\'
+          . $this->s($this->properties[static::PROP_RUNNER_ACTION_DIR], [
+            '/',
+            '\\'
+          ]);
     }
 
     /**
@@ -114,6 +123,7 @@ class GenerateRunnerAction extends AbstractAction {
           [$this, 'checkComposer'],
           [$this, 'createDir'],
           [$this, 'addToComposer'],
+          [$this, 'requireBimRunner'],
         ];
     }
 
@@ -127,20 +137,17 @@ class GenerateRunnerAction extends AbstractAction {
             $this->command('mkdir ' . $this->workDir . ' -p');
             $this->composer('init --stability=dev -n', $this->workDir);
             $this->initComposerContextData();
+            unset($this->composerContext['data']['require']);
+            $this->saveComposer();
         }
         else {
             // Gestion de la stability.
-            if ( !isset($this->composerContext['data']['minimum-stability'])
-            || $this->composerContext['data']['minimum-stability'] != 'dev') {
+            if (!isset($this->composerContext['data']['minimum-stability'])
+              || $this->composerContext['data']['minimum-stability'] != 'dev') {
                 $this->composerContext['data']['minimum-stability'] = 'dev';
                 $this->saveComposer();
             }
         }
-
-        $this->composer('config repositories.bim-runner vcs https://github.com/tsecher/bim-runner', $this->workDir);
-        $this->composer('require tsecher/bim-runner ', $this->workDir);
-
-        $this->initComposerContextData();
     }
 
     /**
@@ -196,9 +203,14 @@ class GenerateRunnerAction extends AbstractAction {
             $mustSave = TRUE;
         }
 
-        if($mustSave){
+        if ($mustSave) {
             $this->saveComposer();
         }
+    }
+
+    protected function requireBimRunner(PropertiesHelperInterface $propertiesHelper) {
+        $this->composer('config repositories.bim-runner vcs https://github.com/tsecher/bim-runner', $this->workDir);
+        $this->composer('require tsecher/bim-runner ', $this->workDir);
     }
 
     /**
