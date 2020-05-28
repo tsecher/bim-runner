@@ -199,11 +199,13 @@ class RunCommand extends Command {
 
         // Si l'utilisateur confirm, on procèdes;
         if ($io->confirm('Valider les actions ?')) {
-            // Récupération des propriétés.
+            // Récupération des paramèetres.
             $this->propertiesHelper->setParams($this->getParams($savedData[PropertiesStorage::FIELD_PARAMS], $actionsToExecute, $io));
 
             // On enregiste les données d'execution.
-            $storage->saveData($this->propertiesHelper->getParams(), $actionsToExecute);
+            if( $io->confirm('Voulez-vous enregistrer ses propriétés pour une utilisation ultérieure ?') ) {
+                $storage->saveData($this->propertiesHelper->getParams(), $actionsToExecute);
+            }
 
             // On execute les actions.
             $this->process($actionsToExecute, $io);

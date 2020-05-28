@@ -29,7 +29,7 @@ interface PropertiesHelperInterface {
      *
      * @return static
      */
-    public function setParam($id, $value);
+    public function setParam($id, $value): PropertiesHelperInterface;
 
     /**
      * Modifie tous les paramtères.
@@ -38,7 +38,7 @@ interface PropertiesHelperInterface {
      *
      * @return mixed
      */
-    public function setParams(array $values);
+    public function setParams(array $values): PropertiesHelperInterface;
 
     /**
      * Retourne la valeur du state.
@@ -64,7 +64,7 @@ interface PropertiesHelperInterface {
      *
      * @return static
      */
-    public function setState($id, $value);
+    public function setState($id, $value): PropertiesHelperInterface;
 
     /**
      * Set all states.
@@ -73,6 +73,12 @@ interface PropertiesHelperInterface {
      *
      * @return mixed
      */
-    public function setStates($values);
+    public function setStates($values): PropertiesHelperInterface;
 
+    /**
+     * Mute les params.
+     *
+     * @return \BimRunner\Tools\IO\PropertiesHelperInterface
+     */
+    public function mute(): PropertiesHelperInterface;
 }

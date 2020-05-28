@@ -40,6 +40,7 @@ class ActionsProcessor {
      * Execute la liste de step.
      */
     public function processSteps($onlySteps) {
+        $this->beforeProcess();
         // Récupération des actions en fonction des steps passés
         $actionsData = [];
         foreach ($onlySteps as $stepId) {
@@ -74,6 +75,7 @@ class ActionsProcessor {
      * Execute tout depuis un step particulier
      */
     public function processFromStep($step) {
+        $this->beforeProcess();
         // Définitions de la tache de départ.
         list($actionId, $taskId) = explode('.', $step);
         $taskId = $taskId ?: '1';
@@ -103,6 +105,7 @@ class ActionsProcessor {
      * Execute la liste de toutes les actions.
      */
     public function processAll() {
+        $this->beforeProcess();
         // Before.
         foreach ($this->availableActions as $action) {
             $action->beforeExecute($this->propertiesHelper);
@@ -126,6 +129,13 @@ class ActionsProcessor {
         foreach ($this->availableActions as $action) {
             $action->afterExecute($this->propertiesHelper);
         }
+    }
+
+    /**
+     * Action avant de lancer un process.
+     */
+    protected function beforeProcess() {
+        $this->propertiesHelper->mute();
     }
 
 }

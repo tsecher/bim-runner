@@ -2,7 +2,7 @@
 
 namespace BimRunner\Tools\IO;
 
-class PropertiesHelper  implements PropertiesHelperInterface{
+class PropertiesHelper implements PropertiesHelperInterface {
 
     /**
      * Singleton
@@ -40,6 +40,21 @@ class PropertiesHelper  implements PropertiesHelperInterface{
     protected $state = [];
 
     /**
+     * Est muté
+     *
+     * @var bool
+     */
+    protected $isMute = FALSE;
+
+    /**
+     * @param bool $isMute
+     */
+    public function mute(): PropertiesHelperInterface {
+        $this->isMute = FALSE;
+        return $this;
+    }
+
+    /**
      * Retourne la valeur de la propriété.
      *
      * @param $id
@@ -71,7 +86,8 @@ class PropertiesHelper  implements PropertiesHelperInterface{
      *
      * @return static
      */
-    public function setParam($id, $value) {
+    public function setParam($id, $value): PropertiesHelperInterface{
+        $this->throwMute();
         $this->params[$id] = $value;
 
         return $this;
@@ -80,8 +96,10 @@ class PropertiesHelper  implements PropertiesHelperInterface{
     /**
      * {@inheritdoc}
      */
-    public function setParams(array $values) {
+    public function setParams(array $values): PropertiesHelperInterface{
+        $this->throwMute();
         $this->params = $values;
+        return $this;
     }
 
     /**
@@ -116,7 +134,7 @@ class PropertiesHelper  implements PropertiesHelperInterface{
      *
      * @return static
      */
-    public function setState($id, $value) {
+    public function setState($id, $value): PropertiesHelperInterface {
         $this->state[$id] = $value;
 
         return $this;
@@ -125,8 +143,19 @@ class PropertiesHelper  implements PropertiesHelperInterface{
     /**
      * {@inheritdoc}
      */
-    public function setStates($values) {
+    public function setStates($values): PropertiesHelperInterface{
         $this->state = $values;
+
+        return $this;
+    }
+
+    /**
+     * Déclenche une erreur si on est en phase d'execution.
+     */
+    protected function throwMute() {
+        if ($this->isMute) {
+            throw new \Exception('Le processus d\'execution est lancé. Vous ne pouvez pas modifier les params.');
+        }
     }
 
 }

@@ -180,7 +180,7 @@ abstract class AbstractAction implements ActionInterface {
 
             $method = end($callback);
             IOHelper::me()
-              ->step($this->s(' Action @action [@key/@count] : @info - @description (Step ID : @action.@key)', [
+              ->step($this->s(' Action @action [@key/@count] @info : @description (Step ID : @action.@key)', [
                 '@action'      => $this->getId(),
                 '@info'        => $method,
                 '@description' => $this->getDescription(get_class(reset($callback)), $method),
