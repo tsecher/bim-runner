@@ -371,6 +371,7 @@ class RunCommand extends Command {
      */
     protected function getActionsToExecute(IOHelperInterface $io, array $savedData) {
         $actionsToExecute = [];
+
         // Si on a un step de défini.
         $onlySteps = array_filter(explode(',', $io->getInput()
           ->getOption(static::OPTION_ONLY_STEPS)));
@@ -381,6 +382,10 @@ class RunCommand extends Command {
             }, $onlySteps);
 
             $actionsToExecute = $this->getActionsByIds($actionsIds);
+        }
+        // Si il n'y a qu'une seule action
+        if( count($this->availableActions) === 1 ){
+            $actionsToExecute = $this->getActionsByIds([reset($this->availableActions)->getId()]);
         }
         // Si il y a des actions dans le storage.
         elseif (!empty($savedData[PropertiesStorage::FIELD_ACTIONS])){
