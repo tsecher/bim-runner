@@ -84,7 +84,7 @@ class ActionsProcessor {
             // Récupération de la liste de taches.
             $tasks = $startAction->getTasksQueue();
             $taskKeys = array_keys($tasks);
-            $tasksToExecute = array_splice($taskKeys, $taskId);
+            $tasksToExecute = array_splice($taskKeys, $taskId-1);
             $startAction->execute($this->propertiesHelper, $tasksToExecute);
 
             // Récupération des actions qui suivent l'action de départ.

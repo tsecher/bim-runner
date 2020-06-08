@@ -34,9 +34,32 @@ trait ActionRetrieverTrait {
      */
     public function getActionById($id) {
         $filtered = array_filter($this->availableActions, function(ActionInterface $action) use ($id){
-           return $id == $action->getId();
+            return $id == $action->getId();
         });
-        
+
         return reset($filtered);
+    }
+
+    /**
+     * Retourne les actions à exectuer depuis from step.
+     *
+     * @param $step
+     *
+     * @return ActionInterface[]
+     */
+    public function getActionFromOptionFromStep($step) {
+        list($actionId, $taskId) = explode('.', $step);
+        $taskId = $taskId ?: '1';
+
+        $actions = [];
+        if ($startAction = $this->getActionById($actionId)) {
+            foreach ($this->availableActions as $action){
+                if( $action->getId() >= $actionId ){
+                    $actions[] = $action;
+                }
+            }
+        }
+
+        return $actions;
     }
 }

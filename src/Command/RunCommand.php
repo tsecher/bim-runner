@@ -203,7 +203,7 @@ class RunCommand extends Command {
             $this->propertiesHelper->setParams($this->getParams($savedData[PropertiesStorage::FIELD_PARAMS], $actionsToExecute, $io));
 
             // On enregiste les données d'execution.
-            if( $io->confirm('Voulez-vous enregistrer ses propriétés pour une utilisation ultérieure ?') ) {
+            if ($io->confirm('Voulez-vous enregistrer ses propriétés pour une utilisation ultérieure ?')) {
                 $storage->saveData($this->propertiesHelper->getParams(), $actionsToExecute);
             }
 
@@ -372,27 +372,35 @@ class RunCommand extends Command {
     protected function getActionsToExecute(IOHelperInterface $io, array $savedData) {
         $actionsToExecute = [];
 
-        // Si on a un step de défini.
+        // Récupérations des options.
         $onlySteps = array_filter(explode(',', $io->getInput()
           ->getOption(static::OPTION_ONLY_STEPS)));
-        if( !empty($onlySteps) ){
-            $actionsIds = array_map(function($step){
+        $fromStepActions = $this->getActionFromOptionFromStep(
+          $io->getInput()->getOption(static::OPTION_FROM_STEP));
+
+        if (!empty($onlySteps)) {
+            $actionsIds = array_map(function ($step) {
                 $stepData = explode('.', $step);
+
                 return reset($stepData);
             }, $onlySteps);
 
             $actionsToExecute = $this->getActionsByIds($actionsIds);
         }
+        // Si il y a un from step.
+        elseif (!empty($fromStepActions)) {
+            $actionsToExecute = $fromStepActions;
+        }
         // Si il n'y a qu'une seule action
-        if( count($this->availableActions) === 1 ){
+        elseif (count($this->availableActions) === 1) {
             $actionsToExecute = $this->getActionsByIds([reset($this->availableActions)->getId()]);
         }
         // Si il y a des actions dans le storage.
-        elseif (!empty($savedData[PropertiesStorage::FIELD_ACTIONS])){
+        elseif (!empty($savedData[PropertiesStorage::FIELD_ACTIONS])) {
             $actionsToExecute = $this->getActionsByIds($savedData[PropertiesStorage::FIELD_ACTIONS]);
         }
         // Sinon on demande.
-        else{
+        else {
             $actionsToExecute = $this->askActionsToExecute($io);
         }
 

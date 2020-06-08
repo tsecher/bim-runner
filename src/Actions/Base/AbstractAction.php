@@ -171,7 +171,7 @@ abstract class AbstractAction implements ActionInterface {
 
         if (!empty($tasks)) {
             $tasksIndex = array_map(function ($id) {
-                return $id - 1;
+                return $id;
             }, $tasks);
             $callbacksList = array_intersect_key($callbacksList, array_flip($tasksIndex));
         }

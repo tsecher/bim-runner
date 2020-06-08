@@ -53,6 +53,22 @@ trait ReplaceTrait {
      * @throws \Exception
      */
     public function append($source, $into, $afterSeparator, $include = TRUE) {
+        // Append.
+        file_put_contents($into, $this->getAppendContent($source,$into, $afterSeparator, $include));
+    }
+
+    /**
+     * Retourne le contenu append.
+     *
+     * @param $source
+     * @param $into
+     * @param $afterSeparator
+     * @param bool $include
+     *
+     * @return string
+     * @throws \Exception
+     */
+    protected function getAppendContent($source, $into, $afterSeparator, $include = TRUE) {
         // Get sources.
         $data = ['source' => ['file' => $source], 'into' => ['file' => $into]];
         foreach ($data as &$fileData) {
@@ -70,15 +86,29 @@ trait ReplaceTrait {
             array_pop($intoContent);
             $intoContent = implode($intoContent);
             if( $include){
-              $intoContent .= $afterSeparator . PHP_EOL;
+                $intoContent .= $afterSeparator . PHP_EOL;
             }
         }
         else {
             $intoContent = $data['into']['content'];
         }
 
+        return $intoContent . $data['source']['content'];
+    }
+
+    /**
+     * Append $source file content into $into.
+     *
+     * @param $source
+     * @param $into
+     * @params $afterSeparator
+     *
+     * @throws \Exception
+     */
+    public function appendAndReplace($source, $into, $afterSeparator, $include = TRUE, array $replace = [], array $wrapperIds = []) {
+        $content = $this->getAppendContent($source,$into, $afterSeparator, $include);
         // Append.
-        file_put_contents($into, $intoContent . $data['source']['content']);
+        file_put_contents($into, $this->replace($replace, $content, $wrapperIds));
     }
 
     /**
