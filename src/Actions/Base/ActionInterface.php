@@ -35,6 +35,6 @@ interface ActionInterface {
 
     public function setId(int $id): void;
 
-    public function getTaskDescription(): void;
+    public function getTaskDescription($class, $method);
 
 }
