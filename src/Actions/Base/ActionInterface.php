@@ -2,8 +2,6 @@
 
 namespace BimRunner\Actions\Base;
 
-use BimRunner\Tools\IO\IOHelperInterface;
-use BimRunner\Tools\IO\PropertiesHelper;
 use BimRunner\Tools\IO\PropertiesHelperInterface;
 use Symfony\Component\Console\Command\Command;
 
@@ -36,5 +34,7 @@ interface ActionInterface {
     public function getId(): int;
 
     public function setId(int $id): void;
+
+    public function getTaskDescription(): void;
 
 }

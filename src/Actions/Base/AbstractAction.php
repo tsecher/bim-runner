@@ -183,7 +183,7 @@ abstract class AbstractAction implements ActionInterface {
               ->step($this->s(' Action @action [@key/@count] @info : @description (Step ID : @action.@key)', [
                 '@action'      => $this->getId(),
                 '@info'        => $method,
-                '@description' => $this->getDescription(get_class(reset($callback)), $method),
+                '@description' => $this->getTaskDescription(get_class(reset($callback)), $method),
                 '@key'         => $key + 1,
                 '@count'       => $count,
               ]));
@@ -208,7 +208,7 @@ abstract class AbstractAction implements ActionInterface {
      * @return mixed
      * @throws \ReflectionException
      */
-    protected function getDescription($class, $method) {
+    public function getTaskDescription($class, $method) {
         $reflectionClass = new \ReflectionMethod($class, $method);
         $property = $reflectionClass->getDocComment();
         $desc = explode(PHP_EOL, $property);

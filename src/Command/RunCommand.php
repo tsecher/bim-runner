@@ -57,6 +57,13 @@ class RunCommand extends Command {
     const OPTION_AUTO_CONFIRM = 'y';
 
     /**
+     * OPtion d'aide.
+     *
+     * @const string
+     */
+    const OPTION_LIST = 'steps';
+
+    /**
      * File Helper
      *
      * @var FileHelperInterface
@@ -172,6 +179,14 @@ class RunCommand extends Command {
           'Step to launch from',
           FALSE // this is the new default value, instead of null
         );
+
+        $this->addOption(
+          static::OPTION_LIST,
+          NULL,
+          InputOption::VALUE_OPTIONAL,
+          'Show step list',
+          FALSE
+        );
     }
 
     /**
@@ -180,6 +195,10 @@ class RunCommand extends Command {
     protected function execute(InputInterface $input, OutputInterface $output) {
         // Définition de l'io avec input et output, d'où le nom de IO
         $io = IOHelper::create($this->getHelper('question'), $input, $output);
+
+        if ($input->getOption(static::OPTION_LIST) !== FALSE) {
+            $this->showHelp($io);
+        }
 
         // Gestinonaire des propriétés sauvegardées.
         $storage = new PropertiesStorage($io, $this->fileHelper);
@@ -405,6 +424,24 @@ class RunCommand extends Command {
         }
 
         return $actionsToExecute;
+    }
+
+    protected function showHelp(IOHelperInterface $io) {
+        $io->section('Liste des steps');
+        foreach ($this->availableActions as $action) {
+            $io->info($this->s('[@id] @name', [
+              '@id'   => $action->getId(),
+              '@name' => $action->getName(),
+            ]));
+
+            foreach ($action->getTasksQueue() as $key => $task) {
+                $io->info($this->s('      [@id.@step] @name', [
+                  '@step' => $key + 1,
+                  '@id'   => $action->getId(),
+                  '@name' => $action->getTaskDescription(get_class(reset($task)), end($task)),
+                ]));
+            }
+        }
     }
 
 }

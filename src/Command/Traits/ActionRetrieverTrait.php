@@ -48,14 +48,16 @@ trait ActionRetrieverTrait {
      * @return ActionInterface[]
      */
     public function getActionFromOptionFromStep($step) {
-        list($actionId, $taskId) = explode('.', $step);
-        $taskId = $taskId ?: '1';
-
         $actions = [];
-        if ($startAction = $this->getActionById($actionId)) {
-            foreach ($this->availableActions as $action){
-                if( $action->getId() >= $actionId ){
-                    $actions[] = $action;
+        if( !empty($step) ){
+            list($actionId, $taskId) = explode('.', $step);
+            $taskId = $taskId ?: '1';
+
+            if ($startAction = $this->getActionById($actionId)) {
+                foreach ($this->availableActions as $action){
+                    if( $action->getId() >= $actionId ){
+                        $actions[] = $action;
+                    }
                 }
             }
         }
