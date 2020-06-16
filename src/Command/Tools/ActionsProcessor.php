@@ -58,7 +58,7 @@ class ActionsProcessor {
                 }
             }
 
-            $actionsData[$actionId]['tasks'][] = $taskId;
+            $actionsData[$actionId]['tasks'][] = $taskId-1;
         }
 
         // On parcourt les actions dédiés, en inidiquant les tâches à executer.
