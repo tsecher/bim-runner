@@ -99,6 +99,13 @@ class RunCommand extends Command {
     protected $state = [];
 
     /**
+     * default process.
+     *
+     * @var bool
+     */
+    protected $default;
+
+    /**
      * {@inheritdoc}
      */
     public function __construct($name = NULL, array $availableActions, FileHelperInterface $fileHelper, PropertiesHelperInterface $propertiesHelper) {
@@ -197,7 +204,7 @@ class RunCommand extends Command {
         $io = IOHelper::create($this->getHelper('question'), $input, $output);
 
         if ($input->getOption(static::OPTION_LIST) !== FALSE) {
-            $this->showHelp($io);
+            $this->showHelp($io);exit;
         }
 
         // Gestinonaire des propriétés sauvegardées.
@@ -205,6 +212,10 @@ class RunCommand extends Command {
         // Récupération des propriétés enregistrées si existantes.
         $savedData = $storage->getSavedData($io);
 
+        $this->askActionsAndProcess($io, $savedData);
+    }
+
+    protected function askActionsAndProcess(IOHelperInterface $io, array $savedData){
         /**
          * Récupération des actions à exécuter.
          *
@@ -222,12 +233,15 @@ class RunCommand extends Command {
             $this->propertiesHelper->setParams($this->getParams($savedData[PropertiesStorage::FIELD_PARAMS], $actionsToExecute, $io));
 
             // On enregiste les données d'execution.
-            if ($io->confirm('Voulez-vous enregistrer ses propriétés pour une utilisation ultérieure ?')) {
+            if (!$io->confirm('Supprimer les données après le traitement ?')) {
                 $storage->saveData($this->propertiesHelper->getParams(), $actionsToExecute);
             }
 
             // On execute les actions.
             $this->process($actionsToExecute, $io);
+        }
+        else{
+            $this->askActionsAndProcess($io, $savedData);
         }
     }
 
@@ -336,6 +350,11 @@ class RunCommand extends Command {
      * @return array|mixed
      */
     protected function getParams(array $params, array $actions, IOHelperInterface $io) {
+
+        // On récupère les propriétés passées par option.
+        $args = array_filter($io->getInput()->getArguments());
+        $params = array_merge($params, $args);
+
         // On récupère les propriétés passées par option.
         $options = array_filter($io->getInput()->getOptions());
         $params = array_merge($params, $options);
@@ -397,7 +416,11 @@ class RunCommand extends Command {
         $fromStepActions = $this->getActionFromOptionFromStep(
           $io->getInput()->getOption(static::OPTION_FROM_STEP));
 
-        if (!empty($onlySteps)) {
+        if( is_null($this->default) && $io->getInput()->getArgument('command') ){
+          $actionsToExecute = $this->availableActions;
+          $this->default = true;
+        }
+        elseif (!empty($onlySteps)) {
             $actionsIds = array_map(function ($step) {
                 $stepData = explode('.', $step);
 
@@ -422,6 +445,8 @@ class RunCommand extends Command {
         else {
             $actionsToExecute = $this->askActionsToExecute($io);
         }
+
+        $actionsToExecute = array_unique($actionsToExecute);
 
         return $actionsToExecute;
     }

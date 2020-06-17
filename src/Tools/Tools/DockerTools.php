@@ -41,4 +41,29 @@ class DockerTools {
         }
     }
 
+    /**
+     * REtourne les infos des docker lancés.
+     *
+     * @return array|string
+     */
+    public function getRuningContainersInfo() {
+        $result = $this->command('docker ps');
+        return array_slice($result, 1);
+    }
+
+    /**
+     * REturn true si il y a des container qui sont lancés.
+     *
+     * @return bool
+     */
+    public function containerIsRuning() {
+        return count($this->getRuningContainersInfo() > 0 );
+    }
+
+    /**
+     * Arrête les containers.
+     */
+    public function stopContainers() {
+        $this->command('docker stop $(docker ps -aq)');
+    }
 }

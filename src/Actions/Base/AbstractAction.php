@@ -55,6 +55,13 @@ abstract class AbstractAction implements ActionInterface {
     protected $weight;
 
     /**
+     * {@inheritdoc}
+     */
+    public function __toString() {
+        return (string) $this->getId();
+    }
+
+    /**
      * @return int
      */
     public function getId(): int {
@@ -105,14 +112,14 @@ abstract class AbstractAction implements ActionInterface {
     public function ask($id, string $questionTitle, $default = NULL, $validators = ['notEmpty']) {
         if (!array_key_exists($id, $this->properties) || is_null($this->properties[$id])) {
             $this->properties[$id] = IOHelper::me()
-              ->ask($questionTitle, $default, $validators);
+                ->ask($questionTitle, $default, $validators);
         }
         else {
             IOHelper::me()
-              ->info($this->s('<question>@questionTitle</question> @value', [
-                '@questionTitle' => $questionTitle,
-                '@value'         => $this->properties[$id],
-              ]));
+                ->info($this->s('<question>@questionTitle</question> @value', [
+                    '@questionTitle' => $questionTitle,
+                    '@value'         => $this->properties[$id],
+                ]));
         }
 
         return $this->properties[$id];
@@ -144,7 +151,7 @@ abstract class AbstractAction implements ActionInterface {
     public function choice($id, $questionTitle, $options, $default) {
         if (!array_key_exists($id, $this->properties)) {
             $this->properties[$id] = IOHelper::me()
-              ->choice($questionTitle, $options, $default);
+                ->choice($questionTitle, $options, $default);
         }
 
         return $this->properties[$id];
@@ -180,13 +187,13 @@ abstract class AbstractAction implements ActionInterface {
 
             $method = end($callback);
             IOHelper::me()
-              ->step($this->s(' Action @action [@key/@count] @info : @description (Step ID : @action.@key)', [
-                '@action'      => $this->getId(),
-                '@info'        => $method,
-                '@description' => $this->getTaskDescription(get_class(reset($callback)), $method),
-                '@key'         => $key + 1,
-                '@count'       => $count,
-              ]));
+                ->step($this->s(' Action @action [@key/@count] @info : @description (Step ID : @action.@key)', [
+                    '@action'      => $this->getId(),
+                    '@info'        => $method,
+                    '@description' => $this->getTaskDescription(get_class(reset($callback)), $method),
+                    '@key'         => $key + 1,
+                    '@count'       => $count,
+                ]));
 
             // Gestion d'erreur.
             try {

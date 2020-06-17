@@ -105,9 +105,6 @@ class PropertiesStorage {
         ];
 
         $data = [
-          static::FIELD_ACTIONS    => array_map(function (\BimRunner\Actions\Base\ActionInterface $action) {
-              return $action->getId();
-          }, $actions),
           static::FIELD_PARAMS => array_filter($properties, function ($value, $key) use ($noSave) {
               return !in_array($key, $noSave);
           }, ARRAY_FILTER_USE_BOTH),

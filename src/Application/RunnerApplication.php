@@ -7,6 +7,7 @@ use BimRunner\Tools\IO\FileHelper;
 use BimRunner\Tools\IO\PropertiesHelper;
 use Symfony\Component\Console\Application;
 use BimRunner\Command\RunCommand;
+use Symfony\Component\Console\Input\InputArgument;
 
 class RunnerApplication {
 
