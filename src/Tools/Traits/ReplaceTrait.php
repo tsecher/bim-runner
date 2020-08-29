@@ -58,6 +58,18 @@ trait ReplaceTrait {
     }
 
     /**
+     * Append data into $destinationPath file.
+     *
+     * @param string $destinationPath
+     *   The destination path.
+     * @param $data
+     *   The data to insert.
+     */
+    public function createFile($destinationPath, $data){
+      file_put_contents($destinationPath, $data);
+    }
+
+    /**
      * Retourne le contenu append.
      *
      * @param $source
