@@ -241,7 +241,7 @@ class RunCommand extends Command {
       $this->process($actionsToExecute, $io);
     }
     else{
-      $this->askActionsAndProcess($io, $savedData);
+      $this->askActionsAndProcess($io, $savedData, $storage);
     }
   }
 
