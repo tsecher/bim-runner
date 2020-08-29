@@ -19,454 +19,454 @@ use Symfony\Component\Yaml\Yaml;
 
 class RunCommand extends Command {
 
-    use StringTrait, ActionRetrieverTrait;
+  use StringTrait, ActionRetrieverTrait;
 
-    /**
-     * ID de l'action de prune.
-     *
-     * @const string
-     */
-    const CANCEL_ACTION_ID = 2;
+  /**
+   * ID de l'action de prune.
+   *
+   * @const string
+   */
+  const CANCEL_ACTION_ID = 2;
 
-    /**
-     * OPtion ONly steps
-     *
-     * @const string
-     */
-    const OPTION_ONLY_STEPS = 'only-steps';
+  /**
+   * OPtion ONly steps
+   *
+   * @const string
+   */
+  const OPTION_ONLY_STEPS = 'only-steps';
 
-    /**
-     * Option from steps
-     *
-     * @const string
-     */
-    const OPTION_FROM_STEP = 'from-step';
+  /**
+   * Option from steps
+   *
+   * @const string
+   */
+  const OPTION_FROM_STEP = 'from-step';
 
-    /**
-     * OPtion actions
-     *
-     * @const string
-     */
-    const OPTION_ACTIONS = 'actions';
+  /**
+   * OPtion actions
+   *
+   * @const string
+   */
+  const OPTION_ACTIONS = 'actions';
 
-    /**
-     * Option auto confirm
-     *
-     * @const string
-     */
-    const OPTION_AUTO_CONFIRM = 'y';
+  /**
+   * Option auto confirm
+   *
+   * @const string
+   */
+  const OPTION_AUTO_CONFIRM = 'y';
 
-    /**
-     * OPtion d'aide.
-     *
-     * @const string
-     */
-    const OPTION_LIST = 'steps';
+  /**
+   * OPtion d'aide.
+   *
+   * @const string
+   */
+  const OPTION_LIST = 'steps';
 
-    /**
-     * File Helper
-     *
-     * @var FileHelperInterface
-     */
-    protected $fileHelper;
+  /**
+   * File Helper
+   *
+   * @var FileHelperInterface
+   */
+  protected $fileHelper;
 
-    /**
-     * Properties helerp
-     *
-     * @var PropertiesHelperInterface
-     */
-    protected $propertiesHelper;
+  /**
+   * Properties helerp
+   *
+   * @var PropertiesHelperInterface
+   */
+  protected $propertiesHelper;
 
-    /**
-     * Liste des actions d'annulation et de continue.
-     *
-     * @var array
-     */
-    protected $stopActions = ['Continue', 'Cancel'];
+  /**
+   * Liste des actions d'annulation et de continue.
+   *
+   * @var array
+   */
+  protected $stopActions = ['Continue', 'Cancel'];
 
-    /**
-     * Properties courantes.
-     *
-     * @var array;
-     */
-    protected $currentProperties = [];
+  /**
+   * Properties courantes.
+   *
+   * @var array;
+   */
+  protected $currentProperties = [];
 
-    /**
-     * State courrant.
-     *
-     * @var array
-     */
-    protected $state = [];
+  /**
+   * State courrant.
+   *
+   * @var array
+   */
+  protected $state = [];
 
-    /**
-     * default process.
-     *
-     * @var bool
-     */
-    protected $default;
+  /**
+   * default process.
+   *
+   * @var bool
+   */
+  protected $default;
 
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct($name = NULL, array $availableActions, FileHelperInterface $fileHelper, PropertiesHelperInterface $propertiesHelper) {
-        parent::__construct($name);
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct($name = NULL, array $availableActions, FileHelperInterface $fileHelper, PropertiesHelperInterface $propertiesHelper) {
+    parent::__construct($name);
 
-        $this->fileHelper = $fileHelper;
-        $this->propertiesHelper = $propertiesHelper;
+    $this->fileHelper = $fileHelper;
+    $this->propertiesHelper = $propertiesHelper;
 
-        // Initialisation des ids des available actions.
-        $this->initAvailableActions($availableActions);
+    // Initialisation des ids des available actions.
+    $this->initAvailableActions($availableActions);
+  }
+
+  /**
+   * @return \BimRunner\Tools\IO\FileHelperInterface
+   */
+  public function getFileHelper() {
+    return $this->fileHelper;
+  }
+
+  /**
+   * Etant donné qu'on ajoute systématiquement des actions d'annulation,
+   * on revoit les identifitans pour qu'ils humains.
+   */
+  protected function initAvailableActions(array $availableActions = []) {
+    $this->availableActions = [];
+    $id = count($this->stopActions);
+    foreach (static::getSortedActions($availableActions) as $action) {
+      $action->setId(++$id);
+      $this->availableActions[$id] = $action;
+    }
+  }
+
+  /**
+   * Init before use.
+   */
+  public function init() {
+    // Initialisation des options globales.
+    $this->initGlobalOptions();
+
+    // Initialisation des options pour chaque action.
+    foreach ($this->availableActions as $action) {
+      $action->initOptions($this);
+    }
+  }
+
+  /**
+   * Définit les options globales.
+   */
+  protected function initGlobalOptions() {
+    $this->addOption(
+      static::OPTION_AUTO_CONFIRM,
+      NULL,
+      InputOption::VALUE_OPTIONAL,
+      'Auto confirm all confirm questions ?',
+      FALSE // this is the new default value, instead of null
+    );
+
+    $this->addOption(
+      static::OPTION_ACTIONS,
+      NULL,
+      InputOption::VALUE_REQUIRED,
+      'Actions separated with ","',
+      FALSE // this is the new default value, instead of null
+    );
+
+    $this->addOption(
+      static::OPTION_ONLY_STEPS,
+      NULL,
+      InputOption::VALUE_REQUIRED,
+      'Steps separated with ","',
+      FALSE // this is the new default value, instead of null
+    );
+
+    $this->addOption(
+      static::OPTION_FROM_STEP,
+      NULL,
+      InputOption::VALUE_REQUIRED,
+      'Step to launch from',
+      FALSE // this is the new default value, instead of null
+    );
+
+    $this->addOption(
+      static::OPTION_LIST,
+      NULL,
+      InputOption::VALUE_OPTIONAL,
+      'Show step list',
+      FALSE
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function execute(InputInterface $input, OutputInterface $output) {
+    // Définition de l'io avec input et output, d'où le nom de IO
+    $io = IOHelper::create($this->getHelper('question'), $input, $output);
+
+    if ($input->getOption(static::OPTION_LIST) !== FALSE) {
+      $this->showHelp($io);exit;
     }
 
+    // Gestinonaire des propriétés sauvegardées.
+    $storage = new PropertiesStorage($io, $this->fileHelper);
+    // Récupération des propriétés enregistrées si existantes.
+    $savedData = $storage->getSavedData($io);
+
+    $this->askActionsAndProcess($io, $savedData, $storage);
+  }
+
+  protected function askActionsAndProcess(IOHelperInterface $io, array $savedData, PropertiesStorage $storage){
     /**
-     * @return \BimRunner\Tools\IO\FileHelperInterface
-     */
-    public function getFileHelper() {
-        return $this->fileHelper;
-    }
-
-    /**
-     * Etant donné qu'on ajoute systématiquement des actions d'annulation,
-     * on revoit les identifitans pour qu'ils humains.
-     */
-    protected function initAvailableActions(array $availableActions = []) {
-        $this->availableActions = [];
-        $id = count($this->stopActions);
-        foreach (static::getSortedActions($availableActions) as $action) {
-            $action->setId(++$id);
-            $this->availableActions[$id] = $action;
-        }
-    }
-
-    /**
-     * Init before use.
-     */
-    public function init() {
-        // Initialisation des options globales.
-        $this->initGlobalOptions();
-
-        // Initialisation des options pour chaque action.
-        foreach ($this->availableActions as $action) {
-            $action->initOptions($this);
-        }
-    }
-
-    /**
-     * Définit les options globales.
-     */
-    protected function initGlobalOptions() {
-        $this->addOption(
-          static::OPTION_AUTO_CONFIRM,
-          NULL,
-          InputOption::VALUE_OPTIONAL,
-          'Auto confirm all confirm questions ?',
-          FALSE // this is the new default value, instead of null
-        );
-
-        $this->addOption(
-          static::OPTION_ACTIONS,
-          NULL,
-          InputOption::VALUE_REQUIRED,
-          'Actions separated with ","',
-          FALSE // this is the new default value, instead of null
-        );
-
-        $this->addOption(
-          static::OPTION_ONLY_STEPS,
-          NULL,
-          InputOption::VALUE_REQUIRED,
-          'Steps separated with ","',
-          FALSE // this is the new default value, instead of null
-        );
-
-        $this->addOption(
-          static::OPTION_FROM_STEP,
-          NULL,
-          InputOption::VALUE_REQUIRED,
-          'Step to launch from',
-          FALSE // this is the new default value, instead of null
-        );
-
-        $this->addOption(
-          static::OPTION_LIST,
-          NULL,
-          InputOption::VALUE_OPTIONAL,
-          'Show step list',
-          FALSE
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output) {
-        // Définition de l'io avec input et output, d'où le nom de IO
-        $io = IOHelper::create($this->getHelper('question'), $input, $output);
-
-        if ($input->getOption(static::OPTION_LIST) !== FALSE) {
-            $this->showHelp($io);exit;
-        }
-
-        // Gestinonaire des propriétés sauvegardées.
-        $storage = new PropertiesStorage($io, $this->fileHelper);
-        // Récupération des propriétés enregistrées si existantes.
-        $savedData = $storage->getSavedData($io);
-
-        $this->askActionsAndProcess($io, $savedData);
-    }
-
-    protected function askActionsAndProcess(IOHelperInterface $io, array $savedData){
-        /**
-         * Récupération des actions à exécuter.
-         *
-         * Si il n'y a pas de données sauvegarder dans runner.yml,
-         * on ask l'utlisateur.
-         */
-        $actionsToExecute = $this->getActionsToExecute($io, $savedData);
-
-        // On affiche le recap.
-        $this->showActionsRecap($io, $actionsToExecute);
-
-        // Si l'utilisateur confirm, on procèdes;
-        if ($io->confirm('Valider les actions ?')) {
-            // Récupération des paramèetres.
-            $this->propertiesHelper->setParams($this->getParams($savedData[PropertiesStorage::FIELD_PARAMS], $actionsToExecute, $io));
-
-            // On enregiste les données d'execution.
-            if (!$io->confirm('Supprimer les données après le traitement ?')) {
-                $storage->saveData($this->propertiesHelper->getParams(), $actionsToExecute);
-            }
-
-            // On execute les actions.
-            $this->process($actionsToExecute, $io);
-        }
-        else{
-            $this->askActionsAndProcess($io, $savedData);
-        }
-    }
-
-    /**
-     * Ask la liste d'actions à effectuer à l'utilisateur.
+     * Récupération des actions à exécuter.
      *
-     * @param IOHelperInterface $io
-     *
-     * @return \BimRunner\Actions\Base\ActionInterface[]
+     * Si il n'y a pas de données sauvegarder dans runner.yml,
+     * on ask l'utlisateur.
      */
-    protected function askActionsToExecute(IOHelperInterface $io) {
-        // Ajout des stop actions..
-        $names = [];
-        foreach ($this->stopActions as $stopAction) {
-            $names[count($names) + 1] = $stopAction;
-        }
+    $actionsToExecute = $this->getActionsToExecute($io, $savedData);
 
-        // Ajout de la liste d'actions.
-        foreach ($this->availableActions as $index => $action) {
-            $names[count($names) + 1] = $action->getName();
-        }
+    // On affiche le recap.
+    $this->showActionsRecap($io, $actionsToExecute);
 
-        // Get options
-        if ($actionsOptions = $io->getInput()
-          ->getOption(static::OPTION_ACTIONS)) {
-            $actions = explode(',', $actionsOptions);
-            $actions = $this->getActionsByIds($actions);
-        }
-        else {
-            // Ask user.
-            do {
-                $result = $io->choice('Quelle(s) action(s) voulez-vous effectuer ?', $names, 1);
-                $actionId = array_search($result, $names);
+    // Si l'utilisateur confirm, on procèdes;
+    if ($io->confirm('Valider les actions ?')) {
+      // Récupération des paramèetres.
+      $this->propertiesHelper->setParams($this->getParams($savedData[PropertiesStorage::FIELD_PARAMS], $actionsToExecute, $io));
 
-                // Si l'action existe.
-                if ($action = $this->getActionById($actionId)) {
-                    $actions[] = $action;
-                }
+      // On enregiste les données d'execution.
+      if (!$io->confirm('Supprimer les données après le traitement ?')) {
+        $storage->saveData($this->propertiesHelper->getParams(), $actionsToExecute);
+      }
 
-                // Si l'action est l'annulatino
-                if ($actionId === static::CANCEL_ACTION_ID) {
-                    $io->error('Vous avez annulé. Du coup on a vider la liste d\'actions. Vous recommencez au départ.');
-                    $actions = [];
-                }
+      // On execute les actions.
+      $this->process($actionsToExecute, $io);
+    }
+    else{
+      $this->askActionsAndProcess($io, $savedData);
+    }
+  }
 
-                // Si le tableau d'action est vide on relance l'action.
-                if ($result <= count($this->stopActions) && empty($actions)) {
-                    $io->error('Vous devez sélectionner au moins une action');
-                }
-            } while (empty($actions) || $actionId > count($this->stopActions));
-        }
-
-        // Clean actions list
-        return static::getSortedActions($actions);
+  /**
+   * Ask la liste d'actions à effectuer à l'utilisateur.
+   *
+   * @param IOHelperInterface $io
+   *
+   * @return \BimRunner\Actions\Base\ActionInterface[]
+   */
+  protected function askActionsToExecute(IOHelperInterface $io) {
+    // Ajout des stop actions..
+    $names = [];
+    foreach ($this->stopActions as $stopAction) {
+      $names[count($names) + 1] = $stopAction;
     }
 
-    /**
-     * @param \BimRunner\Actions\Base\ActionInterface[]
-     *
-     * @return \BimRunner\Actions\Base\ActionInterface[]
-     */
-    public static function getSortedActions($actionsList): array {
-        $list = $actionsList;
-        usort($list, function (\BimRunner\Actions\Base\ActionInterface $actionA, ActionInterface $actionB): int {
-            $a = $actionA->getWeight();
-            $b = $actionB->getWeight();
-            if ($a > $b) {
-                return 1;
-            }
-            if ($a < $b) {
-                return -1;
-            }
-
-            return 0;
-        });
-
-        return $list;
+    // Ajout de la liste d'actions.
+    foreach ($this->availableActions as $index => $action) {
+      $names[count($names) + 1] = $action->getName();
     }
 
-    /**
-     * Affiche le recap des actions.
-     *
-     * @param \BimRunner\Tools\IO\IOHelperInterface $io
-     * @param array $actionsToExecute
-     */
-    protected function showActionsRecap(IOHelperInterface $io, array $actionsToExecute = []) {
-        $io->message('Voici les actions que vous avez sélectionnées', 'confirm');
-        foreach ($actionsToExecute as $action) {
-            $io->message($this->s(
-              '@actionId : @actionName',
-              [
-                '@actionId'   => $action->getId(),
-                '@actionName' => $action->getName(),
-              ]
-            ), 'confirm');
+    // Get options
+    if ($actionsOptions = $io->getInput()
+      ->getOption(static::OPTION_ACTIONS)) {
+      $actions = explode(',', $actionsOptions);
+      $actions = $this->getActionsByIds($actions);
+    }
+    else {
+      // Ask user.
+      do {
+        $result = $io->choice('Quelle(s) action(s) voulez-vous effectuer ?', $names, 1);
+        $actionId = array_search($result, $names);
+
+        // Si l'action existe.
+        if ($action = $this->getActionById($actionId)) {
+          $actions[] = $action;
         }
+
+        // Si l'action est l'annulatino
+        if ($actionId === static::CANCEL_ACTION_ID) {
+          $io->error('Vous avez annulé. Du coup on a vider la liste d\'actions. Vous recommencez au départ.');
+          $actions = [];
+        }
+
+        // Si le tableau d'action est vide on relance l'action.
+        if ($result <= count($this->stopActions) && empty($actions)) {
+          $io->error('Vous devez sélectionner au moins une action');
+        }
+      } while (empty($actions) || $actionId > count($this->stopActions));
     }
 
-    /**
-     * Retourne la liste des propriétés utilisés pour la liste d'actions.
-     *
-     * @param array $params
-     * @param \BimRunner\Actions\Base\ActionInterface[] $actions
-     * @param \BimRunner\Tools\IO\IOHelperInterface $io
-     *
-     * @return array|mixed
-     */
-    protected function getParams(array $params, array $actions, IOHelperInterface $io) {
+    // Clean actions list
+    return static::getSortedActions($actions);
+  }
 
-        // On récupère les propriétés passées par option.
-        $args = array_filter($io->getInput()->getArguments());
-        $params = array_merge($params, $args);
+  /**
+   * @param \BimRunner\Actions\Base\ActionInterface[]
+   *
+   * @return \BimRunner\Actions\Base\ActionInterface[]
+   */
+  public static function getSortedActions($actionsList): array {
+    $list = $actionsList;
+    usort($list, function (\BimRunner\Actions\Base\ActionInterface $actionA, ActionInterface $actionB): int {
+      $a = $actionA->getWeight();
+      $b = $actionB->getWeight();
+      if ($a > $b) {
+        return 1;
+      }
+      if ($a < $b) {
+        return -1;
+      }
 
-        // On récupère les propriétés passées par option.
-        $options = array_filter($io->getInput()->getOptions());
-        $params = array_merge($params, $options);
+      return 0;
+    });
 
-        // Initialise la liste de propriété en parcourant chanque action.
-        foreach ($actions as $action) {
-            $io->section($action->getName());
-            $action->setDefaultParams($params);
-            $action->initQuestions();
-            $params = array_merge($params, $action->getParams());
-        }
+    return $list;
+  }
 
-        // Confirm.
-        $confirm = $io->confirm('C\est OK pour vous? On peut lancer les actions ? Sinon on recommence.');
-        if (!$confirm) {
-            $params = $this->getParams([], $actions, $io);
-        }
+  /**
+   * Affiche le recap des actions.
+   *
+   * @param \BimRunner\Tools\IO\IOHelperInterface $io
+   * @param array $actionsToExecute
+   */
+  protected function showActionsRecap(IOHelperInterface $io, array $actionsToExecute = []) {
+    $io->message('Voici les actions que vous avez sélectionnées', 'confirm');
+    foreach ($actionsToExecute as $action) {
+      $io->message($this->s(
+        '@actionId : @actionName',
+        [
+          '@actionId'   => $action->getId(),
+          '@actionName' => $action->getName(),
+        ]
+      ), 'confirm');
+    }
+  }
 
-        return $params;
+  /**
+   * Retourne la liste des propriétés utilisés pour la liste d'actions.
+   *
+   * @param array $params
+   * @param \BimRunner\Actions\Base\ActionInterface[] $actions
+   * @param \BimRunner\Tools\IO\IOHelperInterface $io
+   *
+   * @return array|mixed
+   */
+  protected function getParams(array $params, array $actions, IOHelperInterface $io) {
+
+    // On récupère les propriétés passées par option.
+    $args = array_filter($io->getInput()->getArguments());
+    $params = array_merge($params, $args);
+
+    // On récupère les propriétés passées par option.
+    $options = array_filter($io->getInput()->getOptions());
+    $params = array_merge($params, $options);
+
+    // Initialise la liste de propriété en parcourant chanque action.
+    foreach ($actions as $action) {
+      $io->section($action->getName());
+      $action->setDefaultParams($params);
+      $action->initQuestions();
+      $params = array_merge($params, $action->getParams());
     }
 
-    /**
-     * Execute all actions.
-     *
-     * @param ActionInterface[] $actions
-     * @param array $properties
-     */
-    protected function process(array $actions, IOHelperInterface $io): void {
-        $processor = new ActionsProcessor($actions, $this->propertiesHelper, $io);
-
-        // Récupérations des options.
-        $onlySteps = array_filter(explode(',', $io->getInput()
-          ->getOption(static::OPTION_ONLY_STEPS)));
-        $fromStep = $io->getInput()->getOption(static::OPTION_FROM_STEP);
-
-        if (!empty($onlySteps)) {
-            $processor->processSteps($onlySteps);
-        }
-        elseif (isset($fromStep) && $fromStep !== FALSE) {
-            $processor->processFromStep($fromStep);
-        }
-        else {
-            $processor->processAll();
-        }
+    // Confirm.
+    $confirm = $io->confirm('C\est OK pour vous? On peut lancer les actions ? Sinon on recommence.');
+    if (!$confirm) {
+      $params = $this->getParams([], $actions, $io);
     }
 
-    /**
-     * Retourne la liste des actions à executer.
-     *
-     * @param \BimRunner\Tools\IO\IOHelperInterface $io
-     * @param array $savedData
-     */
-    protected function getActionsToExecute(IOHelperInterface $io, array $savedData) {
-        $actionsToExecute = [];
+    return $params;
+  }
 
-        // Récupérations des options.
-        $onlySteps = array_filter(explode(',', $io->getInput()
-          ->getOption(static::OPTION_ONLY_STEPS)));
-        $fromStepActions = $this->getActionFromOptionFromStep(
-          $io->getInput()->getOption(static::OPTION_FROM_STEP));
+  /**
+   * Execute all actions.
+   *
+   * @param ActionInterface[] $actions
+   * @param array $properties
+   */
+  protected function process(array $actions, IOHelperInterface $io): void {
+    $processor = new ActionsProcessor($actions, $this->propertiesHelper, $io);
 
-        if( is_null($this->default) && $io->getInput()->getArgument('command') ){
-          $actionsToExecute = $this->availableActions;
-          $this->default = true;
-        }
-        elseif (!empty($onlySteps)) {
-            $actionsIds = array_map(function ($step) {
-                $stepData = explode('.', $step);
+    // Récupérations des options.
+    $onlySteps = array_filter(explode(',', $io->getInput()
+      ->getOption(static::OPTION_ONLY_STEPS)));
+    $fromStep = $io->getInput()->getOption(static::OPTION_FROM_STEP);
 
-                return reset($stepData);
-            }, $onlySteps);
+    if (!empty($onlySteps)) {
+      $processor->processSteps($onlySteps);
+    }
+    elseif (isset($fromStep) && $fromStep !== FALSE) {
+      $processor->processFromStep($fromStep);
+    }
+    else {
+      $processor->processAll();
+    }
+  }
 
-            $actionsToExecute = $this->getActionsByIds($actionsIds);
-        }
-        // Si il y a un from step.
-        elseif (!empty($fromStepActions)) {
-            $actionsToExecute = $fromStepActions;
-        }
-        // Si il n'y a qu'une seule action
-        elseif (count($this->availableActions) === 1) {
-            $actionsToExecute = $this->getActionsByIds([reset($this->availableActions)->getId()]);
-        }
-        // Si il y a des actions dans le storage.
-        elseif (!empty($savedData[PropertiesStorage::FIELD_ACTIONS])) {
-            $actionsToExecute = $this->getActionsByIds($savedData[PropertiesStorage::FIELD_ACTIONS]);
-        }
-        // Sinon on demande.
-        else {
-            $actionsToExecute = $this->askActionsToExecute($io);
-        }
+  /**
+   * Retourne la liste des actions à executer.
+   *
+   * @param \BimRunner\Tools\IO\IOHelperInterface $io
+   * @param array $savedData
+   */
+  protected function getActionsToExecute(IOHelperInterface $io, array $savedData) {
+    $actionsToExecute = [];
 
-        $actionsToExecute = array_unique($actionsToExecute);
+    // Récupérations des options.
+    $onlySteps = array_filter(explode(',', $io->getInput()
+      ->getOption(static::OPTION_ONLY_STEPS)));
+    $fromStepActions = $this->getActionFromOptionFromStep(
+      $io->getInput()->getOption(static::OPTION_FROM_STEP));
 
-        return $actionsToExecute;
+    if( is_null($this->default) && $io->getInput()->getArgument('command') ){
+      $actionsToExecute = $this->availableActions;
+      $this->default = true;
+    }
+    elseif (!empty($onlySteps)) {
+      $actionsIds = array_map(function ($step) {
+        $stepData = explode('.', $step);
+
+        return reset($stepData);
+      }, $onlySteps);
+
+      $actionsToExecute = $this->getActionsByIds($actionsIds);
+    }
+    // Si il y a un from step.
+    elseif (!empty($fromStepActions)) {
+      $actionsToExecute = $fromStepActions;
+    }
+    // Si il n'y a qu'une seule action
+    elseif (count($this->availableActions) === 1) {
+      $actionsToExecute = $this->getActionsByIds([reset($this->availableActions)->getId()]);
+    }
+    // Si il y a des actions dans le storage.
+    elseif (!empty($savedData[PropertiesStorage::FIELD_ACTIONS])) {
+      $actionsToExecute = $this->getActionsByIds($savedData[PropertiesStorage::FIELD_ACTIONS]);
+    }
+    // Sinon on demande.
+    else {
+      $actionsToExecute = $this->askActionsToExecute($io);
     }
 
-    protected function showHelp(IOHelperInterface $io) {
-        $io->section('Liste des steps');
-        foreach ($this->availableActions as $action) {
-            $io->info($this->s('[@id] @name', [
-              '@id'   => $action->getId(),
-              '@name' => $action->getName(),
-            ]));
+    $actionsToExecute = array_unique($actionsToExecute);
 
-            foreach ($action->getTasksQueue() as $key => $task) {
-                $io->info($this->s('      [@id.@step] @name', [
-                  '@step' => $key + 1,
-                  '@id'   => $action->getId(),
-                  '@name' => $action->getTaskDescription(get_class(reset($task)), end($task)),
-                ]));
-            }
-        }
+    return $actionsToExecute;
+  }
+
+  protected function showHelp(IOHelperInterface $io) {
+    $io->section('Liste des steps');
+    foreach ($this->availableActions as $action) {
+      $io->info($this->s('[@id] @name', [
+        '@id'   => $action->getId(),
+        '@name' => $action->getName(),
+      ]));
+
+      foreach ($action->getTasksQueue() as $key => $task) {
+        $io->info($this->s('      [@id.@step] @name', [
+          '@step' => $key + 1,
+          '@id'   => $action->getId(),
+          '@name' => $action->getTaskDescription(get_class(reset($task)), end($task)),
+        ]));
+      }
     }
+  }
 
 }
